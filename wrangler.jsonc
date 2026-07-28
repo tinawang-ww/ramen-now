@@ -6,5 +6,14 @@
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": ".output/public"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ramen-now",
+      // Replace with the id from `wrangler d1 create ramen-now` before deploying.
+      "database_id": "local-dev",
+      "migrations_dir": "server/database/migrations"
+    }
+  ]
 }
