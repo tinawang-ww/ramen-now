@@ -22,3 +22,10 @@ logs
 .env
 .env.*
 !.env.example
+
+# Cloudflare
+.wrangler
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+worker-configuration.d.ts

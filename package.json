@@ -5,8 +5,11 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
+    "preview": "wrangler dev",
+    "deploy": "nuxt build && wrangler deploy",
+    "cf-typegen": "wrangler types",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
@@ -18,7 +21,10 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.2.0",
+    "@cloudflare/workers-types": "^5.20260727.1",
     "@nuxt/eslint": "^1.16.0",
-    "eslint": "^10.8.0"
+    "eslint": "^10.8.0",
+    "nitro-cloudflare-dev": "^0.2.2",
+    "wrangler": "^4.114.0"
   }
 }
