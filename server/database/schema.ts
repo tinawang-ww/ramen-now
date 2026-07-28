@@ -14,8 +14,8 @@ export const reports = sqliteTable('reports', {
   shopId: integer('shop_id')
     .notNull()
     .references(() => shops.id, { onDelete: 'cascade' }),
-  /** 0 沒在排 · 1 排一點 · 2 排很長 · 3 今天別來了 */
-  level: integer('level').notNull(),
+  /** How many people were queuing when this report was filed. */
+  people: integer('people').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),

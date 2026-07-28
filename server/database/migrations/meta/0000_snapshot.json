@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "06b9c2ef-6ae9-48df-8044-2f65804fef48",
+  "id": "512cae0d-2de7-4ca8-b60f-70bff85e8b60",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "reports": {
@@ -21,8 +21,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "level": {
-          "name": "level",
+        "people": {
+          "name": "people",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,

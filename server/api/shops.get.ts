@@ -1,14 +1,15 @@
+import type { ShopSummary } from '~~/shared/types'
 import { sql } from 'drizzle-orm'
 
-export interface ShopRow {
+interface RawRow {
   id: number
   name: string
-  level: number | null
+  people: number | null
   reportedAt: number | null
   reportCount: number
 }
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event): Promise<ShopSummary[]> => {
   const db = useDb(event)
 
   // One round trip: every shop plus its newest report, via a window function.
@@ -16,14 +17,14 @@ export default defineEventHandler(async (event) => {
     select
       s.id as id,
       s.name as name,
-      r.level as level,
+      r.people as people,
       r.created_at as reportedAt,
       coalesce(c.count, 0) as reportCount
     from shops s
     left join (
       select
         shop_id,
-        level,
+        people,
         created_at,
         row_number() over (partition by shop_id order by created_at desc, id desc) as rn
       from reports
@@ -34,11 +35,11 @@ export default defineEventHandler(async (event) => {
     order by coalesce(r.created_at, 0) desc, s.id desc
   `)
 
-  return (results as unknown as ShopRow[]).map(row => ({
+  return (results as unknown as RawRow[]).map(row => ({
     id: Number(row.id),
     name: row.name,
-    level: row.level === null ? null : Number(row.level),
-    // D1 stores our timestamps as unix seconds; the client wants milliseconds.
+    people: row.people === null ? null : Number(row.people),
+    // created_at is stored as unix seconds; the client works in ms.
     reportedAt: row.reportedAt === null ? null : Number(row.reportedAt) * 1000,
     reportCount: Number(row.reportCount),
   }))

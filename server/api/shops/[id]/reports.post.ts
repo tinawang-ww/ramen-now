@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { isValidLevel } from '~~/shared/levels'
+import { isValidPeople, MAX_PEOPLE } from '~~/shared/queue'
 
 export default defineEventHandler(async (event) => {
   const shopId = Number(getRouterParam(event, 'id'))
@@ -8,11 +8,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: '店家不存在' })
   }
 
-  const body = await readBody<{ level?: unknown }>(event)
-  const level = typeof body?.level === 'number' ? body.level : Number.NaN
+  const body = await readBody<{ people?: unknown }>(event)
+  const people = typeof body?.people === 'number' ? body.people : Number.NaN
 
-  if (!isValidLevel(level)) {
-    throw createError({ statusCode: 400, statusMessage: '請選擇排隊狀況' })
+  if (!isValidPeople(people)) {
+    throw createError({ statusCode: 400, statusMessage: `排隊人數請填 0–${MAX_PEOPLE}` })
   }
 
   const db = useDb(event)
@@ -29,12 +29,12 @@ export default defineEventHandler(async (event) => {
 
   const report = await db
     .insert(schema.reports)
-    .values({ shopId, level })
-    .returning({ level: schema.reports.level, createdAt: schema.reports.createdAt })
+    .values({ shopId, people })
+    .returning({ people: schema.reports.people, createdAt: schema.reports.createdAt })
     .get()
 
   return {
-    level: report?.level ?? level,
+    people: report?.people ?? people,
     reportedAt: (report?.createdAt ?? new Date()).getTime(),
   }
 })

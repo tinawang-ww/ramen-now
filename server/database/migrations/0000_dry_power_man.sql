@@ -1,7 +1,7 @@
 CREATE TABLE `reports` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`shop_id` integer NOT NULL,
-	`level` integer NOT NULL,
+	`people` integer NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
 	FOREIGN KEY (`shop_id`) REFERENCES `shops`(`id`) ON UPDATE no action ON DELETE cascade
 );
