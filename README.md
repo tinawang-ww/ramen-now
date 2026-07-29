@@ -1,37 +1,37 @@
 # ramen now
 
-拉麵店排隊人數的共同回報板。一頁、白底、沒有多的東西：看現在排幾個人，點一下回報。
+A shared board for ramen shop queue lengths. One page, white background, nothing extra: see how many people are in line right now, tap once to report.
 
-- 每筆回報只記「目前排隊人數」，不估等待時間。
-- 人數用小人 icon 呈現，旁邊是數字；超過 10 人只畫 10 個小人，數字才是準的。
-- 超過 90 分鐘的回報會轉淡，代表不能再當「現在」看。
-- 店家由使用者自己新增，同名（不分大小寫）會歸成同一家。
+- Each report records only the *current number of people in line* — no wait-time estimates.
+- Head counts are shown as person icons with the number beside them; above 10 people only 10 icons are drawn, so the number is the accurate part.
+- Reports older than 90 minutes fade out, signalling they can no longer be read as "right now".
+- Shops are added by users themselves; identical names (case-insensitive) are merged into the same shop.
 
-Nuxt 4 + Nuxt UI v4 + Cloudflare Workers + D1（Drizzle）。
+Nuxt 4 + Nuxt UI v4 + Cloudflare Workers + D1 (Drizzle).
 
-## 開發
+## Development
 
 ```sh
 pnpm install
-pnpm db:migrate   # 建立本機 D1（.wrangler/state）
+pnpm db:migrate   # create the local D1 database (.wrangler/state)
 pnpm dev
 ```
 
-## 部署
+## Deployment
 
-`wrangler.jsonc` 裡的 `database_id` 是佔位值，第一次部署前要先建立真正的 D1：
+The `database_id` in `wrangler.jsonc` is a placeholder — create a real D1 database before your first deploy:
 
 ```sh
-pnpm wrangler d1 create ramen-now   # 把回傳的 database_id 填回 wrangler.jsonc
+pnpm wrangler d1 create ramen-now   # copy the returned database_id back into wrangler.jsonc
 pnpm db:migrate:remote
 pnpm deploy
 ```
 
-## 其他指令
+## Other commands
 
-| 指令 | 用途 |
+| Command | Purpose |
 | --- | --- |
-| `pnpm db:generate` | 改完 `server/database/schema.ts` 後產生 migration |
-| `pnpm cf-typegen` | 重新產生 `worker-configuration.d.ts`（改過 wrangler 設定後） |
-| `pnpm lint` / `pnpm typecheck` | 檢查 |
-| `pnpm preview` | 用 wrangler 跑 build 後的結果 |
+| `pnpm db:generate` | Generate a migration after editing `server/database/schema.ts` |
+| `pnpm cf-typegen` | Regenerate `worker-configuration.d.ts` (after changing wrangler config) |
+| `pnpm lint` / `pnpm typecheck` | Checks |
+| `pnpm preview` | Run the built output with wrangler |
