@@ -32,11 +32,6 @@ const STAMP_TONES = [
   'border-ink/40 text-ink/55',
 ]
 
-/** UTC on purpose: local formatting could differ between server and client. */
-function stampDate(ms: number) {
-  return new Date(ms).toISOString().slice(0, 10).replaceAll('-', '.')
-}
-
 // Null until mounted: the server can't know, and guessing either way would
 // desync the markup it sent.
 const supported = ref<boolean | null>(null)
@@ -53,6 +48,55 @@ const statusLine = computed(() => {
 
   return t('me.anonNote')
 })
+
+const sharingStamps = ref(false)
+
+/**
+ * The stamp book as a PNG — native share sheet where files can be shared,
+ * a plain download everywhere else. Either way it leaves as an image, which
+ * is the format feeds and chats actually pass around.
+ */
+async function shareStamps() {
+  if (sharingStamps.value || !stamps.value.length)
+    return
+
+  sharingStamps.value = true
+  notice.value = ''
+
+  try {
+    const blob = await renderStampBook(stamps.value, {
+      title: t('me.stamps'),
+      subtitle: `${user.value?.label ?? ''} · ${t('me.shareCardShops', { count: stamps.value.length })}`,
+      more: stamps.value.length > 12
+        ? t('me.shareCardMore', { count: stamps.value.length - 12 })
+        : '',
+      tagline: t('board.tagline'),
+      origin: location.host,
+    })
+    const file = new File([blob], 'ramen-now-stamps.png', { type: 'image/png' })
+
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file] })
+    }
+    else {
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = file.name
+      link.click()
+      URL.revokeObjectURL(url)
+      notice.value = t('me.stampsDownloaded')
+    }
+  }
+  catch (error) {
+    // Closing the share sheet isn't a failure, so it doesn't read as one.
+    if ((error as Error)?.name !== 'AbortError')
+      notice.value = t('me.shareStampsFailed')
+  }
+  finally {
+    sharingStamps.value = false
+  }
+}
 
 async function signOut() {
   if (working.value)
@@ -153,6 +197,16 @@ async function addPasskey() {
           </span>
         </li>
       </ul>
+
+      <!-- The book leaves as an image — feeds and chats don't pass around links to /me. -->
+      <button
+        type="button"
+        :disabled="sharingStamps"
+        class="mt-5 text-[12px] leading-4 text-ink/35 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-accent"
+        @click="shareStamps()"
+      >
+        {{ sharingStamps ? t('me.sharingStamps') : t('me.shareStamps') }}
+      </button>
     </section>
 
     <p
