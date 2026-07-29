@@ -21,9 +21,12 @@
   },
   "dependencies": {
     "@nuxt/ui": "^4.10.0",
+    "@simplewebauthn/browser": "^11.0.0",
+    "@simplewebauthn/server": "^11.0.0",
     "@vueuse/nuxt": "^14.3.0",
     "drizzle-orm": "^0.45.2",
     "nuxt": "^4.5.1",
+    "nuxt-auth-utils": "^0.5.29",
     "vue": "^3.5.40",
     "vue-router": "^5.2.0"
   },

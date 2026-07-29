@@ -13,9 +13,12 @@ Nuxt 4 + Nuxt UI v4 + Cloudflare Workers + D1 (Drizzle).
 
 ```sh
 pnpm install
-pnpm db:migrate   # create the local D1 database (.wrangler/state)
+cp .env.example .env   # then put a real session password in it
+pnpm db:migrate        # create the local D1 database (.wrangler/state)
 pnpm dev
 ```
+
+`NUXT_SESSION_PASSWORD` signs the session cookie and must be at least 32 characters: `openssl rand -base64 32`. `pnpm preview` reads it from `.dev.vars` instead, so copy `.dev.vars.example` too if you use that.
 
 ## Deployment
 
@@ -24,6 +27,7 @@ The `database_id` in `wrangler.jsonc` is a placeholder — create a real D1 data
 ```sh
 pnpm wrangler d1 create ramen-now   # copy the returned database_id back into wrangler.jsonc
 pnpm db:migrate:remote
+pnpm wrangler secret put NUXT_SESSION_PASSWORD
 pnpm deploy
 ```
 

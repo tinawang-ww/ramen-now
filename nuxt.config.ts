@@ -2,8 +2,9 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxt/ui', '@vueuse/nuxt', '@nuxt/eslint', 'nitro-cloudflare-dev'],
+  modules: ['@nuxt/ui', '@vueuse/nuxt', '@nuxt/eslint', 'nitro-cloudflare-dev', 'nuxt-auth-utils'],
   css: ['~/assets/css/main.css'],
+  auth: { webAuthn: true },
   app: {
     head: {
       htmlAttrs: { lang: 'zh-Hant-TW' },
