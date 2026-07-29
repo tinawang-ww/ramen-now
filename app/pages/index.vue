@@ -20,6 +20,17 @@ useSeoMeta({
   description: () => t('board.seoDescription'),
 })
 
+// Geolocation, all of it gated behind a user gesture — see useUserLocation.
+const {
+  coords: here, // the user's position, or null until they allow it
+  status: locationStatus, // 'unsupported' | 'idle' | 'locating' | 'ready' | 'error'
+  message: locationMessage, // already-translated failure text, '' when fine
+  nudging: locationNudging, // true when the permission prompt has sat unanswered
+  denied: locationDenied, // true once the user (or the browser) has said no
+  supported: locationSupported, // false during SSR and where geolocation can't run
+  locate, // asks the browser for a fix; call from a click only
+} = useUserLocation()
+
 // The shop list, fetched on the server for the first paint and re-fetched on
 // the client by `refresh()` below.
 // deep: true because reporting and requesting patch a row in place; Nuxt 4's
@@ -29,6 +40,7 @@ useSeoMeta({
 const { data: shops, refresh } = await useFetch('/api/shops', {
   deep: true,
   default: (): ShopSummary[] => [],
+  query: computed(() => (here.value ? { lat: here.value.lat, lng: here.value.lng } : {}))
 })
 
 // A clock that ticks every 30s. Rows render "5 min ago" and decide whether a
@@ -44,16 +56,6 @@ const openId = ref<number | null>(null)
 // Transient message shown on the bottom status line, set by `flash()`.
 const notice = ref('')
 
-// Geolocation, all of it gated behind a user gesture — see useUserLocation.
-const {
-  coords: here, // the user's position, or null until they allow it
-  status: locationStatus, // 'unsupported' | 'idle' | 'locating' | 'ready' | 'error'
-  message: locationMessage, // already-translated failure text, '' when fine
-  nudging: locationNudging, // true when the permission prompt has sat unanswered
-  denied: locationDenied, // true once the user (or the browser) has said no
-  supported: locationSupported, // false during SSR and where geolocation can't run
-  locate, // asks the browser for a fix; call from a click only
-} = useUserLocation()
 
 // Seeded from the URL like the feed, so a shared /?shop=麵屋 一心 link opens
 // the board already filtered to that shop.
@@ -86,18 +88,15 @@ const rows = computed(() => {
         : null,
     }))
 
-  // 如果尚未取得位置，我們就暫時不顯示任何店家，因為需求是「只顯示 500 公尺以內的店」
+  // 如果尚未取得位置，就不顯示
   if (from === null) {
     return []
   }
 
-  return list
-    // 過濾出距離小於等於 1 公里 (1000 公尺) 的店家
-    .filter(row => row.distance !== null && row.distance <= 1.0)
-    .sort((a, b) => {
-      // Both known: plain ascending kilometres.
-      return a.distance! - b.distance!
-    })
+  return list.sort((a, b) => {
+    // Both known: plain ascending kilometres.
+    return a.distance! - b.distance!
+  })
 })
 
 // Having coordinates is the same thing as the list being distance-sorted, so

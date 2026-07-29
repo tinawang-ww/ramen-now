@@ -1,5 +1,6 @@
 import type { ShopSummary } from '~~/shared/types'
 import { sql } from 'drizzle-orm'
+import { distanceKm } from '~~/shared/geo'
 
 interface RawRow {
   id: number
@@ -13,7 +14,16 @@ interface RawRow {
   reportedAt: number | null
 }
 
-export default defineCachedEventHandler(async (event): Promise<ShopSummary[]> => {
+export default defineEventHandler(async (event): Promise<ShopSummary[]> => {
+  const query = getQuery(event)
+  const userLat = query.lat ? Number(query.lat) : null
+  const userLng = query.lng ? Number(query.lng) : null
+
+  // If user location is not provided, return empty list immediately to save DB/CPU
+  if (userLat === null || userLng === null || isNaN(userLat) || isNaN(userLng)) {
+    return []
+  }
+
   const db = useDb(event)
 
   // One round trip: every shop plus its newest report, via a window function.
@@ -40,11 +50,18 @@ export default defineCachedEventHandler(async (event): Promise<ShopSummary[]> =>
     order by coalesce(r.created_at, 0) desc, s.id desc
   `)
 
-  return (results as unknown as RawRow[]).map(row => ({
+  // Filter rows by distance (<= 0.5km) BEFORE mapping to prevent CPU timeout from mapping 600 objects
+  const nearbyRows = (results as unknown as RawRow[]).filter((row) => {
+    if (row.lat === null || row.lng === null) return false
+    const dist = distanceKm({ lat: userLat, lng: userLng }, { lat: Number(row.lat), lng: Number(row.lng) })
+    return dist <= 0.5
+  })
+
+  return nearbyRows.map(row => ({
     id: Number(row.id),
     name: row.name,
-    lat: row.lat === null ? null : Number(row.lat),
-    lng: row.lng === null ? null : Number(row.lng),
+    lat: Number(row.lat),
+    lng: Number(row.lng),
     counterSeats: row.counterSeats === null ? null : Number(row.counterSeats),
     tableSeats: row.tableSeats === null ? null : Number(row.tableSeats),
     // Timestamps are stored as unix seconds; the client works in ms.
@@ -52,8 +69,4 @@ export default defineCachedEventHandler(async (event): Promise<ShopSummary[]> =>
     people: row.people === null ? null : Number(row.people),
     reportedAt: row.reportedAt === null ? null : Number(row.reportedAt) * 1000,
   }))
-}, {
-  maxAge: 10,
-  swr: true,
-  name: 'shops-list'
 })
