@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Paper tile, accent bowl, mist steam — the site palette in one glyph. -->
+  <rect width="64" height="64" rx="14" fill="#fffdf9"/>
+  <path d="M25 12c0 4.5 4 4.5 4 9M36 12c0 4.5 4 4.5 4 9" stroke="#8fb1be" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+  <path d="M10 30h44a22 22 0 0 1-44 0Z" fill="#d53302"/>
+  <rect x="26" y="51" width="12" height="4" rx="1.5" fill="#d53302"/>
+  <path d="M10 30h44" stroke="#00012a" stroke-width="3" stroke-linecap="round"/>
+</svg>

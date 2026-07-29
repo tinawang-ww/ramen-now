@@ -79,6 +79,9 @@ const requested = computed(() =>
 // 綁定在 Modal 中用來選擇排隊人數的變數 (預設為 0)
 const draft = ref<number | undefined>(0)
 
+/** The best news on the board — worth its own chip, not a number you must parse. */
+const noLine = computed(() => fresh.value && props.shop.people === 0)
+
 // 監聽 Modal 的開關狀態
 // 當 Modal 被打開時，決定人數選擇器的初始值：
 // 如果當前的回報資料還是「新鮮」的，就帶入資料庫目前的人數，否則歸零重新計算。
@@ -139,8 +142,8 @@ const STEP_BUTTON = 'size-9 rounded-full border border-ink/[0.09] text-[15px] le
             <!-- 顯示店家名稱，長度過長時會自動換行 break-words -->
             <span class="break-words">{{ shop.name }}</span>
           </span>
-          <!-- 顯示副資訊列：距離與回報時間 -->
           <span class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 tabular-nums text-[12px] leading-4 text-ink/35">
+            <span v-if="noLine" class="rounded-full bg-matcha/35 px-2 text-[10px] leading-4 text-ink/70">{{ t('shopRow.noLine') }}</span>
             <!-- 顯示 computed 計算出來的 meta 字串 -->
             <span>{{ meta }}</span>
 
@@ -219,6 +222,25 @@ const STEP_BUTTON = 'size-9 rounded-full border border-ink/[0.09] text-[15px] le
             >
               <!-- 顯示 "回報" 或類似的按鈕文字 -->
               {{ t('shopRow.report') }}
+            </button>
+          </div>
+
+          <div class="flex flex-wrap items-baseline justify-center gap-x-4 mt-6">
+            <!-- The board answers "how long now"; the write-ups answer "is it worth it". -->
+            <NuxtLink
+              :to="{ path: '/feed', query: { shop: shop.name } }"
+              class="text-[12px] leading-4 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-accent"
+            >
+              {{ t('shopRow.readReviews') }}
+            </NuxtLink>
+
+            <!-- Every share is a personal invite — this is how the board grows. -->
+            <button
+              type="button"
+              class="text-[12px] leading-4 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-accent"
+              @click="emit('share')"
+            >
+              {{ t('shopRow.share') }}
             </button>
           </div>
         </div>

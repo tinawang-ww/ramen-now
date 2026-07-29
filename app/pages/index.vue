@@ -5,7 +5,7 @@
 import type { ShopSummary } from '~~/shared/types'
 // Great-circle distance in km. Row rendering formats it; this page only sorts on it.
 import { distanceKm } from '~~/shared/geo'
-import { isRequestPending } from '~~/shared/queue'
+import { FRESH_WINDOW_MS, isRequestPending } from '~~/shared/queue'
 
 // `t` looks a message key up in the active locale. The locale itself lives in a
 // composable shared with SiteNav's language toggle, so it can change mid-session.
@@ -55,8 +55,10 @@ const {
   locate, // asks the browser for a fix; call from a click only
 } = useUserLocation()
 
-// The search box's text. Filters the list by name; nothing is sent to the server.
-const query = ref('')
+// Seeded from the URL like the feed, so a shared /?shop=麵屋 一心 link opens
+// the board already filtered to that shop.
+const route = useRoute()
+const query = ref(typeof route.query.shop === 'string' ? route.query.shop : '')
 
 /**
  * The rendered rows: the shop list filtered by the search box, each paired with
@@ -158,6 +160,11 @@ useIntervalFn(() => {
  * The row shows the new number immediately and the panel closes, so the tap
  * feels finished before the request is; a failure puts the old values back.
  */
+// The row you just reported glows marigold for a beat — confirmation where
+// your eyes already are, not only in the status line below the fold.
+const glowId = ref<number | null>(null)
+let glowTimer: ReturnType<typeof setTimeout> | undefined
+
 async function report(shop: ShopSummary, people: number) {
   // A shallow copy is enough to undo with — every field we touch is a primitive.
   const previous = { ...shop }
@@ -179,12 +186,47 @@ async function report(shop: ShopSummary, people: number) {
     // Closing the loop out loud: a thank-you costs nothing and reporting again
     // tomorrow is the whole game.
     flash(t('board.reported'))
+    glowId.value = shop.id
+    clearTimeout(glowTimer)
+    glowTimer = setTimeout(() => (glowId.value = null), 1000)
   }
   catch {
     // Assign back onto the same object rather than replacing it in the array —
     // the row is bound to this instance.
     Object.assign(shop, previous)
     flash(t('board.reportFailed'))
+  }
+}
+
+/**
+ * Native share sheet where there is one, clipboard everywhere else. The text
+ * carries the live count, so the message is useful even before the tap.
+ */
+async function share(shop: ShopSummary) {
+  const freshCount = shop.people !== null
+    && shop.reportedAt !== null
+    && nowMs.value - shop.reportedAt < FRESH_WINDOW_MS
+    ? shop.people
+    : null
+
+  const text = freshCount !== null
+    ? t('board.shareFresh', { name: shop.name, count: freshCount })
+    : t('board.shareStale', { name: shop.name })
+  const url = `${location.origin}/?shop=${encodeURIComponent(shop.name)}`
+
+  try {
+    if (navigator.share) {
+      await navigator.share({ text, url })
+    }
+    else {
+      await navigator.clipboard.writeText(`${text} ${url}`)
+      flash(t('board.shareCopied'))
+    }
+  }
+  catch (error) {
+    // Closing the share sheet isn't a failure, so it doesn't read as one.
+    if ((error as Error)?.name !== 'AbortError')
+      flash(t('board.shareFailed'))
   }
 }
 
@@ -354,7 +396,8 @@ const NAME_FIELD = {
       <ShopRow
         v-for="(row, index) in rows"
         :key="row.shop.id"
-        class="stagger-in"
+        class="stagger-in transition-colors duration-700"
+        :class="glowId === row.shop.id ? 'bg-marigold/25' : ''"
         :style="{ animationDelay: `${Math.min(index, 8) * 40}ms` }"
         :shop="row.shop"
         :distance="row.distance"
@@ -363,6 +406,7 @@ const NAME_FIELD = {
         @toggle="openId = openId === row.shop.id ? null : row.shop.id"
         @report="report(row.shop, $event)"
         @request="request(row.shop)"
+        @share="share(row.shop)"
       />
       <!--
         Keyed by shop id, not by index, so a re-sort moves rows instead of

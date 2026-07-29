@@ -9,16 +9,18 @@
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 
   /*
-   * The whole palette, five colors: ink for text, paper behind it, accent for
-   * the few things you can press or must notice, mist for metadata, marigold
-   * only as the selection highlight. Restraint is the point — the layout stays
-   * typographic, the colors just make it warm.
+   * The whole palette: ink for text, paper behind it, accent for the few
+   * things you can press or must notice, mist for metadata, marigold for
+   * moments of thanks (selection, the just-reported glow), matcha for good
+   * news ("no line"). Restraint is the point — the layout stays typographic,
+   * the colors just make it warm.
    */
   --color-ink: #00012a;
   --color-paper: #fffdf9;
   --color-accent: #d53302;
   --color-mist: #8fb1be;
   --color-marigold: #fcc560;
+  --color-matcha: #a0cbad;
 
   /* The "please report this" dot breathes, so it reads as waiting. */
   --animate-pulse-dot: pulse-dot 2.4s ease-in-out infinite;
