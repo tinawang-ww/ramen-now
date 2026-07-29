@@ -13,7 +13,7 @@ const known = computed(() => props.counter !== null || props.table !== null)
 </script>
 
 <template>
-  <span v-if="known" class="flex items-center gap-2">
+  <span v-if="known" class="flex items-center gap-2 w-full mt-1">
     <span class="opacity-60">{{ t('seatCounts.totalLabel') }}</span>
 
     <span v-if="counter !== null" class="flex items-center gap-1">
