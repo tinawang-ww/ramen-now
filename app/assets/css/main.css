@@ -48,6 +48,13 @@ body {
     animation: none !important;
     opacity: 1 !important;
   }
+
+  .surface-forward-enter-from,
+  .surface-forward-leave-to,
+  .surface-back-enter-from,
+  .surface-back-leave-to {
+    transform: none !important;
+  }
 }
 
 .stagger-in {
@@ -64,4 +71,28 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/*
+ * Moving between the two surfaces. `out-in` means the pages never overlap, so
+ * this needs no absolute positioning — and 12px of travel is the stagger-in
+ * vocabulary (6px + opacity) turned onto the X axis, rather than a full slide.
+ */
+.surface-forward-enter-active,
+.surface-forward-leave-active,
+.surface-back-enter-active,
+.surface-back-leave-active {
+  transition: opacity 200ms var(--ease-out-strong), transform 200ms var(--ease-out-strong);
+}
+
+.surface-forward-enter-from,
+.surface-back-leave-to {
+  opacity: 0;
+  transform: translateX(12px);
+}
+
+.surface-forward-leave-to,
+.surface-back-enter-from {
+  opacity: 0;
+  transform: translateX(-12px);
 }
