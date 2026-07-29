@@ -8,4 +8,6 @@ export interface ShopSummary {
   people: number | null
   /** Newest report's timestamp in ms, or null. */
   reportedAt: number | null
+  /** Newest report request's timestamp in ms, or null when nobody has asked. */
+  requestedAt: number | null
 }

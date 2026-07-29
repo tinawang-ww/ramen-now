@@ -7,7 +7,10 @@ useSeoMeta({
   description: '大家一起回報拉麵店現在的排隊狀況，出門前先看一眼。',
 })
 
+// deep: true because reporting and requesting patch a row in place; Nuxt 4's
+// shallow default would keep the list rendering the pre-tap values.
 const { data: shops, refresh } = await useFetch('/api/shops', {
+  deep: true,
   default: (): ShopSummary[] => [],
 })
 
@@ -104,6 +107,24 @@ async function report(shop: ShopSummary, people: number) {
   catch {
     Object.assign(shop, previous)
     flash('回報失敗，請再試一次')
+  }
+}
+
+/** Ask whoever walks past next to fill this shop in. */
+async function request(shop: ShopSummary) {
+  const previous = shop.requestedAt
+
+  shop.requestedAt = Date.now()
+  openId.value = null
+
+  try {
+    const result = await $fetch(`/api/shops/${shop.id}/request`, { method: 'POST' })
+    shop.requestedAt = result.requestedAt
+    flash('已標記這家需要回報')
+  }
+  catch {
+    shop.requestedAt = previous
+    flash('要求失敗，請再試一次')
   }
 }
 
@@ -214,6 +235,7 @@ async function addShop() {
         :open="openId === row.shop.id"
         @toggle="openId = openId === row.shop.id ? null : row.shop.id"
         @report="report(row.shop, $event)"
+        @request="request(row.shop)"
       />
     </ul>
 

@@ -1,0 +1,1 @@
+ALTER TABLE `shops` ADD `requested_at` integer;

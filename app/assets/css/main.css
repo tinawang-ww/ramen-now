@@ -7,6 +7,19 @@
 @theme {
   --font-sans: ui-sans-serif, system-ui, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+
+  /* The "please report this" dot breathes, so it reads as waiting. */
+  --animate-pulse-dot: pulse-dot 2.4s ease-in-out infinite;
+
+  @keyframes pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.25;
+    }
+  }
 }
 
 :root {
@@ -30,7 +43,8 @@ body {
     transition-duration: 0.12s !important;
   }
 
-  .stagger-in {
+  .stagger-in,
+  .animate-pulse-dot {
     animation: none !important;
     opacity: 1 !important;
   }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ShopSummary } from '~~/shared/types'
 import { formatDistance } from '~~/shared/geo'
-import { clampPeople, FRESH_WINDOW_MS, MAX_PEOPLE } from '~~/shared/queue'
+import { clampPeople, FRESH_WINDOW_MS, isRequestPending, MAX_PEOPLE } from '~~/shared/queue'
 
 const props = defineProps<{
   shop: ShopSummary
@@ -14,6 +14,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   toggle: []
   report: [people: number]
+  request: []
 }>()
 
 /** A report from three hours ago says nothing about the queue right now. */
@@ -33,6 +34,11 @@ const meta = computed(() => {
 
   return parts.join(' · ')
 })
+
+/** Somebody asked for a fresh report and nobody has answered yet. */
+const requested = computed(() =>
+  isRequestPending(props.shop.requestedAt, props.shop.reportedAt, props.now),
+)
 
 // The 0fr → 1fr grid trick collapses to 0px once the child clips its overflow,
 // so the panel is measured on open instead.
@@ -74,8 +80,21 @@ function onInput(event: Event) {
       @click="emit('toggle')"
     >
       <span class="min-w-0">
-        <span class="block truncate text-[17px] leading-6 tracking-tight text-black/90">
-          {{ shop.name }}
+        <span class="flex min-w-0 items-center gap-2 text-[17px] leading-6 tracking-tight text-black/90">
+          <!-- The dot marks a shop someone is waiting on a report for. -->
+          <Transition
+            enter-active-class="transition-[opacity,transform] duration-200 ease-out-strong"
+            leave-active-class="transition-[opacity,transform] duration-200 ease-out-strong"
+            enter-from-class="scale-0 opacity-0"
+            leave-to-class="scale-0 opacity-0"
+          >
+            <span v-if="requested" class="shrink-0">
+              <span class="block size-[6px] animate-pulse-dot rounded-full bg-black/70" />
+              <span class="sr-only">有人要求回報</span>
+            </span>
+          </Transition>
+
+          <span class="truncate">{{ shop.name }}</span>
         </span>
         <span class="mt-1 block text-[12px] leading-4 tabular-nums text-black/35">
           {{ meta }}
@@ -93,49 +112,61 @@ function onInput(event: Event) {
       <div
         ref="panel"
         :inert="!open"
-        class="flex items-center gap-3 pb-5 transition-opacity duration-200 ease-out-strong"
+        class="pb-5 transition-opacity duration-200 ease-out-strong"
         :class="open ? 'opacity-100' : 'opacity-0'"
       >
-        <div class="flex items-center gap-1.5">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              :disabled="draft === 0"
+              class="size-9 rounded-full border border-black/[0.09] text-[15px] leading-none text-black/70 transition-[transform,border-color,opacity] duration-150 ease-out-strong active:scale-[0.94] disabled:opacity-25 hover-fine:hover:border-black/25"
+              aria-label="減少一人"
+              @click="step(-1)"
+            >
+              −
+            </button>
+
+            <input
+              :value="draft"
+              type="text"
+              inputmode="numeric"
+              maxlength="2"
+              aria-label="目前排隊人數"
+              class="w-11 rounded-lg border border-transparent py-1 text-center text-[17px] leading-6 tabular-nums text-black/90 outline-none transition-colors duration-200 focus:border-black/15"
+              @input="onInput"
+            >
+
+            <button
+              type="button"
+              :disabled="draft >= MAX_PEOPLE"
+              class="size-9 rounded-full border border-black/[0.09] text-[15px] leading-none text-black/70 transition-[transform,border-color,opacity] duration-150 ease-out-strong active:scale-[0.94] disabled:opacity-25 hover-fine:hover:border-black/25"
+              aria-label="增加一人"
+              @click="step(1)"
+            >
+              ＋
+            </button>
+          </div>
+
+          <span class="text-[12px] leading-4 text-black/30">人在排</span>
+
           <button
             type="button"
-            :disabled="draft === 0"
-            class="size-9 rounded-full border border-black/[0.09] text-[15px] leading-none text-black/70 transition-[transform,border-color,opacity] duration-150 ease-out-strong active:scale-[0.94] disabled:opacity-25 hover-fine:hover:border-black/25"
-            aria-label="減少一人"
-            @click="step(-1)"
+            class="ml-auto rounded-full bg-black px-5 py-2.5 text-[13px] leading-4 text-white transition-transform duration-150 ease-out-strong active:scale-[0.97]"
+            @click="emit('report', draft)"
           >
-            −
-          </button>
-
-          <input
-            :value="draft"
-            type="text"
-            inputmode="numeric"
-            maxlength="2"
-            aria-label="目前排隊人數"
-            class="w-11 rounded-lg border border-transparent py-1 text-center text-[17px] leading-6 tabular-nums text-black/90 outline-none transition-colors duration-200 focus:border-black/15"
-            @input="onInput"
-          >
-
-          <button
-            type="button"
-            :disabled="draft >= MAX_PEOPLE"
-            class="size-9 rounded-full border border-black/[0.09] text-[15px] leading-none text-black/70 transition-[transform,border-color,opacity] duration-150 ease-out-strong active:scale-[0.94] disabled:opacity-25 hover-fine:hover:border-black/25"
-            aria-label="增加一人"
-            @click="step(1)"
-          >
-            ＋
+            回報
           </button>
         </div>
 
-        <span class="text-[12px] leading-4 text-black/30">人在排</span>
-
+        <!-- For people who aren't there: ask someone who is. -->
         <button
           type="button"
-          class="ml-auto rounded-full bg-black px-5 py-2.5 text-[13px] leading-4 text-white transition-transform duration-150 ease-out-strong active:scale-[0.97]"
-          @click="emit('report', draft)"
+          :disabled="requested"
+          class="mt-1 text-[12px] leading-4 text-black/35 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:text-black/25 hover-fine:hover:text-black/70 hover-fine:disabled:hover:text-black/25"
+          @click="emit('request')"
         >
-          回報
+          {{ requested ? '已經有人要求回報' : '不在現場？要求回報' }}
         </button>
       </div>
     </div>
