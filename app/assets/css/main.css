@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Reggae+One&family=Yuji+Syuku&display=swap');
 @import "tailwindcss";
 @import "@nuxt/ui";
 
@@ -5,7 +6,14 @@
 @custom-variant hover-fine (@media (hover: hover) and (pointer: fine));
 
 @theme {
-  --font-sans: ui-sans-serif, system-ui, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+  --font-title: "Reggae One", sans-serif;
+  --font-shop: "Yuji Syuku", serif;
+  --font-sans: ui-sans-serif,
+  system-ui,
+  "PingFang TC",
+  "Noto Sans TC",
+  "Microsoft JhengHei",
+  sans-serif;
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 
   /*
@@ -26,10 +34,12 @@
   --animate-pulse-dot: pulse-dot 2.4s ease-in-out infinite;
 
   @keyframes pulse-dot {
+
     0%,
     100% {
       opacity: 1;
     }
+
     50% {
       opacity: 0.25;
     }
@@ -54,6 +64,7 @@ body {
 
 /* Keep opacity fades (they aid comprehension), drop the movement. */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -84,6 +95,7 @@ body {
     opacity: 0;
     transform: translateY(6px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
