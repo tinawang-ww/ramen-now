@@ -1,3 +1,5 @@
+import type { Locale } from '~~/shared/locale'
+
 /**
  * Every user-facing string, in both languages. Flat keys, grouped by surface;
  * `{name}` placeholders are filled in by useLocale's t().
@@ -60,7 +62,7 @@ const zh = {
   'feed.empty': '還沒有人寫食記，吃完的時候寫一下。',
   'feed.hint': '看板說現在排幾人，食記說值不值得去排。',
 
-  'reviewCard.queuePrefix': '排隊：',
+  'reviewCard.queue': '排隊：{queue}',
 
   'reviewForm.shopLabel': '店家',
   'reviewForm.shopPlaceholder': '搜尋或新增店名',
@@ -82,8 +84,11 @@ const zh = {
   'me.title': '你的回報',
   'me.tagline': '登入之後回報的次數會記在這裡。',
   'me.zero': '還沒有回報過，路過的時候按一下。',
+  // The count sits between these two at display size, so the sentence is split
+  // rather than interpolated. Zero has its own line, so only 1 vs many matters.
   'me.countPrefix': '你已經回報過',
-  'me.countSuffix': '次',
+  'me.countSuffixOne': '次',
+  'me.countSuffixMany': '次',
   'me.currentUser': '現在是「{label}」',
   'me.signOut': '登出',
   'me.signingOut': '登出中…',
@@ -171,7 +176,7 @@ const en = {
   'feed.empty': 'No reviews yet — write one after your next bowl.',
   'feed.hint': 'The board says how long the line is; reviews say whether it’s worth the wait.',
 
-  'reviewCard.queuePrefix': 'Queue: ',
+  'reviewCard.queue': 'Queue: {queue}',
 
   'reviewForm.shopLabel': 'Shop',
   'reviewForm.shopPlaceholder': 'Search or add a shop',
@@ -194,7 +199,8 @@ const en = {
   'me.tagline': 'Reports you make while signed in are counted here.',
   'me.zero': 'No reports yet — tap one in next time you walk past.',
   'me.countPrefix': 'You’ve reported',
-  'me.countSuffix': 'times',
+  'me.countSuffixOne': 'time',
+  'me.countSuffixMany': 'times',
   'me.currentUser': 'Signed in as “{label}”',
   'me.signOut': 'Sign out',
   'me.signingOut': 'Signing out…',
@@ -228,7 +234,6 @@ const en = {
   'location.failed': 'Locating failed — the list is back to newest-report order.',
 } as const satisfies Record<MessageKey, string>
 
-export const messages = { zh, en }
+export const messages = { zh, en } satisfies Record<Locale, Record<string, string>>
 
-export type Locale = keyof typeof messages
 export type MessageKey = keyof typeof zh

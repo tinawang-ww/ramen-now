@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { MessageKey } from '~/i18n/messages'
 import { browserSupportsWebAuthn } from '@simplewebauthn/browser'
 
 definePageMeta({ middleware: 'auth' })
@@ -23,11 +24,14 @@ const supported = ref<boolean | null>(null)
 onMounted(() => (supported.value = browserSupportsWebAuthn()))
 
 const working = ref<'signout' | 'passkey' | null>(null)
-const notice = ref('')
+
+// A key, not a string: nothing here clears on a timer, so a notice can still be
+// on screen when the language is switched and has to follow it.
+const noticeKey = ref<MessageKey | null>(null)
 
 const statusLine = computed(() => {
-  if (notice.value)
-    return notice.value
+  if (noticeKey.value)
+    return t(noticeKey.value)
   if (supported.value === false)
     return t('me.passkeyUnsupported')
 
@@ -39,7 +43,7 @@ async function signOut() {
     return
 
   working.value = 'signout'
-  notice.value = ''
+  noticeKey.value = null
 
   try {
     await $fetch('/api/logout', { method: 'POST' })
@@ -47,7 +51,7 @@ async function signOut() {
     await navigateTo('/')
   }
   catch {
-    notice.value = t('me.signOutFailed')
+    noticeKey.value = 'me.signOutFailed'
     working.value = null
   }
 }
@@ -59,7 +63,7 @@ async function addPasskey() {
     return
 
   working.value = 'passkey'
-  notice.value = ''
+  noticeKey.value = null
 
   try {
     // The request carries the session, so the server files this credential under
@@ -67,13 +71,13 @@ async function addPasskey() {
     // existing label keeps both passkeys named the same in the OS picker.
     await register({ userName: label })
     await fetchSession()
-    notice.value = t('me.passkeyAdded')
+    noticeKey.value = 'me.passkeyAdded'
   }
   catch (error) {
     // Backing out of the system dialog isn't a failure, so it doesn't read as one.
-    notice.value = (error as Error)?.name === 'NotAllowedError'
-      ? t('me.passkeyCancelled')
-      : t('me.passkeyFailed')
+    noticeKey.value = (error as Error)?.name === 'NotAllowedError'
+      ? 'me.passkeyCancelled'
+      : 'me.passkeyFailed'
   }
   finally {
     working.value = null
@@ -101,12 +105,12 @@ async function addPasskey() {
     <p v-else class="mt-12 text-[17px] leading-7 text-black/70">
       {{ t('me.countPrefix') }}
       <span class="mx-1.5 text-[40px] leading-none tracking-tight text-black/90 tabular-nums">{{ count }}</span>
-      {{ t('me.countSuffix') }}
+      {{ count === 1 ? t('me.countSuffixOne') : t('me.countSuffixMany') }}
     </p>
 
     <p
       class="mt-8 text-[11px] leading-4 transition-colors duration-200"
-      :class="notice || supported === false ? 'text-black/55' : 'text-black/25'"
+      :class="noticeKey || supported === false ? 'text-black/55' : 'text-black/25'"
       role="status"
     >
       {{ statusLine }}

@@ -1,3 +1,5 @@
+import type { Locale } from './locale'
+
 export interface Coords {
   lat: number
   lng: number
@@ -20,10 +22,13 @@ export function distanceKm(from: Coords, to: Coords) {
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(a)))
 }
 
-/** Under a km reads in metres, and never with false precision. */
-// Locale is a plain union here, not the app's Locale type: shared/ is also
-// loaded by the server, which has no business importing app/i18n.
-export function formatDistance(km: number, locale: 'zh' | 'en' = 'zh') {
+/**
+ * Under a km reads in metres, and never with false precision.
+ *
+ * locale is required: defaulting it would let a new call site render Chinese
+ * into an English page and still typecheck.
+ */
+export function formatDistance(km: number, locale: Locale) {
   if (km < 0.1)
     return locale === 'en' ? 'right nearby' : '就在附近'
   if (km < 1)

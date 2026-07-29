@@ -1,4 +1,5 @@
-import type { Locale, MessageKey } from '~/i18n/messages'
+import type { Locale } from '~~/shared/locale'
+import type { MessageKey } from '~/i18n/messages'
 import { messages } from '~/i18n/messages'
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365

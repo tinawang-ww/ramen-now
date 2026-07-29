@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { MessageKey } from '~/i18n/messages'
 import { browserSupportsWebAuthn } from '@simplewebauthn/browser'
 
 definePageMeta({
@@ -30,11 +31,14 @@ const supported = ref<boolean | null>(null)
 onMounted(() => (supported.value = browserSupportsWebAuthn()))
 
 const working = ref<'signin' | 'create' | null>(null)
-const notice = ref('')
+
+// A key, not a string: nothing here clears on a timer, so a notice can still be
+// on screen when the language is switched and has to follow it.
+const noticeKey = ref<MessageKey | null>(null)
 
 const statusLine = computed(() => {
-  if (notice.value)
-    return notice.value
+  if (noticeKey.value)
+    return t(noticeKey.value)
   if (supported.value === false)
     return t('login.unsupported')
 
@@ -62,7 +66,7 @@ async function startPasskey(kind: 'signin' | 'create') {
     return
 
   working.value = kind
-  notice.value = ''
+  noticeKey.value = null
 
   try {
     // Signing in takes no arguments at all — no userName means no
@@ -76,7 +80,7 @@ async function startPasskey(kind: 'signin' | 'create') {
   }
   catch (error) {
     // Backing out of the system dialog isn't a failure, so it doesn't read as one.
-    notice.value = t((error as Error)?.name === 'NotAllowedError' ? CANCELLED[kind] : FAILED[kind])
+    noticeKey.value = (error as Error)?.name === 'NotAllowedError' ? CANCELLED[kind] : FAILED[kind]
   }
   finally {
     working.value = null
@@ -118,7 +122,7 @@ async function startPasskey(kind: 'signin' | 'create') {
 
     <p
       class="mt-6 text-[11px] leading-4 transition-colors duration-200"
-      :class="notice || supported === false ? 'text-black/55' : 'text-black/25'"
+      :class="noticeKey || supported === false ? 'text-black/55' : 'text-black/25'"
       role="status"
     >
       {{ statusLine }}

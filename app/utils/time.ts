@@ -1,10 +1,11 @@
-import type { Locale } from '~/i18n/messages'
+import type { Locale } from '~~/shared/locale'
 
 const MINUTE = 60 * 1000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 
-export function formatAgo(timestamp: number, now: number, locale: Locale = 'zh') {
+/** locale is required, for the same reason as formatDistance's. */
+export function formatAgo(timestamp: number, now: number, locale: Locale) {
   const diff = Math.max(0, now - timestamp)
 
   if (locale === 'en') {

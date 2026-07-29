@@ -29,7 +29,7 @@ const meta = computed(() => `${props.review.author} · ${formatAgo(props.review.
     </p>
 
     <p class="mt-3 text-[12px] leading-4 text-black/35">
-      {{ t('reviewCard.queuePrefix') + review.queue }}
+      {{ t('reviewCard.queue', { queue: review.queue }) }}
     </p>
 
     <p class="mt-1 text-[12px] leading-4 tabular-nums text-black/35">
