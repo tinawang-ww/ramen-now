@@ -28,8 +28,10 @@ export function usePageSwipe(target: MaybeRefOrGetter<EventTarget | null | undef
   let eligible = false
 
   const { lengthX, lengthY } = useSwipe(target, {
-    // 50 is a little eager for a full-page change.
-    threshold: 60,
+    // Nothing moves until the finger lifts, so a long threshold reads as the
+    // gesture being ignored. 40px is about as short as it can be without a
+    // scroll that drifts sideways counting as a swipe.
+    threshold: 40,
 
     onSwipeStart(event) {
       eligible = false

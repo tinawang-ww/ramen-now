@@ -50,9 +50,7 @@ body {
   }
 
   .surface-forward-enter-from,
-  .surface-forward-leave-to,
-  .surface-back-enter-from,
-  .surface-back-leave-to {
+  .surface-back-enter-from {
     transform: none !important;
   }
 }
@@ -74,25 +72,26 @@ body {
 }
 
 /*
- * Moving between the two surfaces. `out-in` means the pages never overlap, so
- * this needs no absolute positioning — and 12px of travel is the stagger-in
- * vocabulary (6px + opacity) turned onto the X axis, rather than a full slide.
+ * Moving between the two surfaces: the outgoing page just goes, and only the
+ * incoming one animates.
+ *
+ * There is deliberately no `-leave-*` rule. With `mode: 'out-in'` the two halves
+ * run in sequence, so animating both turned 140ms into ~470ms of switching with
+ * a near-blank stretch in the middle — which read as sluggish rather than
+ * smooth. Leaving the exit instant keeps the directional cue at a tenth of the
+ * cost. 10px of travel is the stagger-in vocabulary (6px + opacity) on the X axis.
  */
 .surface-forward-enter-active,
-.surface-forward-leave-active,
-.surface-back-enter-active,
-.surface-back-leave-active {
-  transition: opacity 200ms var(--ease-out-strong), transform 200ms var(--ease-out-strong);
+.surface-back-enter-active {
+  transition: opacity 140ms var(--ease-out-strong), transform 140ms var(--ease-out-strong);
 }
 
-.surface-forward-enter-from,
-.surface-back-leave-to {
+.surface-forward-enter-from {
   opacity: 0;
-  transform: translateX(12px);
+  transform: translateX(10px);
 }
 
-.surface-forward-leave-to,
 .surface-back-enter-from {
   opacity: 0;
-  transform: translateX(-12px);
+  transform: translateX(-10px);
 }
