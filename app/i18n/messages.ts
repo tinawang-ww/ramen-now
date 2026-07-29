@@ -56,6 +56,8 @@ const zh = {
   'shopRow.readReviews': '看這家的食記 →',
   'shopRow.share': '分享現況',
   'shopRow.noLine': '不用排',
+  'shopRow.hoursTitle': '平常什麼時候人多',
+  'shopRow.hourTip': '{hour} 點左右平均 {avg} 人',
 
   'feed.seoTitle': '食記 · 拉麵Now',
   'feed.seoDescription': '大家吃過的拉麵：點了什麼、多少錢、當時排隊排多久。',
@@ -190,6 +192,8 @@ const en = {
   'shopRow.readReviews': 'Read its reviews →',
   'shopRow.share': 'Share the line',
   'shopRow.noLine': 'No line',
+  'shopRow.hoursTitle': 'When the line usually forms',
+  'shopRow.hourTip': 'around {hour}:00 · avg {avg} in line',
 
   'feed.seoTitle': 'Reviews · Ramen Now',
   'feed.seoDescription': 'Bowls people have eaten: what they ordered, what it cost, and how long the line was.',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ShopSummary } from '~~/shared/types'
+import type { QueueHour, ShopSummary } from '~~/shared/types'
 import { formatDistance } from '~~/shared/geo'
 import { clampPeople, FRESH_WINDOW_MS, isRequestPending, MAX_PEOPLE } from '~~/shared/queue'
 
@@ -53,6 +53,29 @@ const panelHeight = ref(0)
 
 const draft = ref(0)
 
+// Fetched on first open, not per shop on load: fifty rows would be fifty
+// requests for charts almost nobody expands.
+const hours = ref<QueueHour[]>([])
+let hoursRequested = false
+
+async function loadHours() {
+  if (hoursRequested)
+    return
+
+  hoursRequested = true
+  try {
+    hours.value = (await $fetch(`/api/shops/${props.shop.id}/hours`)).hours
+    // The chart arrived after the panel was measured — measure again, or the
+    // new rows sit clipped under the fold.
+    await nextTick()
+    if (props.open)
+      panelHeight.value = panel.value?.offsetHeight ?? 0
+  }
+  catch {
+    // No chart is a fine chart; the row works without it.
+  }
+}
+
 // Start from what's on the board when it's still current, otherwise from zero.
 watch(() => props.open, (open) => {
   if (!open)
@@ -60,6 +83,7 @@ watch(() => props.open, (open) => {
 
   draft.value = fresh.value ? (props.shop.people ?? 0) : 0
   panelHeight.value = panel.value?.offsetHeight ?? 0
+  loadHours()
 })
 
 // While the panel is open the figures track the draft, so the row answers
@@ -198,6 +222,9 @@ function onInput(event: Event) {
             {{ t('shopRow.share') }}
           </button>
         </div>
+
+        <!-- This shop's own report history, folded into "when to actually go". -->
+        <QueueHours v-if="hours.length" class="mt-4" :hours="hours" :now="now" />
       </div>
     </div>
   </li>
