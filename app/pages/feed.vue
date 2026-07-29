@@ -6,11 +6,32 @@ useSeoMeta({
   description: '大家吃過的拉麵：點了什麼、多少錢、當時排隊排多久。',
 })
 
-// No `deep: true` here, unlike index.vue: nothing on this page mutates a row
-// in place, so the shallow default is enough.
+const route = useRoute()
+const router = useRouter()
+
+// Seeded from the URL, so /feed?shop=麵屋 一心 is a shareable "this shop's
+// write-ups" page.
+const query = ref(typeof route.query.shop === 'string' ? route.query.shop : '')
+const debounced = refDebounced(query, 300)
+
+/**
+ * Searching on the server, unlike index.vue's client-side filter: write-ups
+ * accumulate past FEED_LIMIT, so filtering what we already hold would quietly
+ * report "no write-ups" for shops that have them.
+ *
+ * No `deep: true` — nothing on this page mutates a row in place.
+ */
 const { data: reviews } = await useFetch('/api/reviews', {
+  query: { shop: debounced },
   default: (): ReviewSummary[] => [],
 })
+
+// replace, not push: pushing would stack one history entry per keystroke.
+watch(debounced, (value) => {
+  router.replace({ query: value.trim() ? { shop: value.trim() } : {} })
+})
+
+const searching = computed(() => query.value.trim().length > 0)
 
 const now = useNow({ interval: 30_000 })
 const nowMs = computed(() => now.value.getTime())
@@ -77,6 +98,25 @@ async function submit(payload: {
       </p>
     </header>
 
+    <div class="mt-8 flex items-center gap-3 border-b border-black/[0.07] pb-1.5">
+      <input
+        v-model="query"
+        type="search"
+        enterkeyhint="search"
+        placeholder="搜尋店名"
+        aria-label="搜尋店名"
+        class="min-w-0 flex-1 bg-transparent text-[15px] leading-6 text-black/90 outline-none placeholder:text-black/25 [&::-webkit-search-cancel-button]:hidden"
+      >
+      <button
+        v-if="searching"
+        type="button"
+        class="shrink-0 text-[12px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+        @click="query = ''"
+      >
+        清除
+      </button>
+    </div>
+
     <!-- Signed out you can still read everything; only writing needs an account. -->
     <div class="mt-8">
       <NuxtLink
@@ -116,7 +156,7 @@ async function submit(payload: {
     </ul>
 
     <p v-else class="mt-12 text-[13px] leading-5 text-black/35">
-      還沒有人寫食記，吃完的時候寫一下。
+      {{ searching ? `找不到「${query.trim()}」的食記。` : '還沒有人寫食記，吃完的時候寫一下。' }}
     </p>
 
     <p
