@@ -6,7 +6,7 @@ definePageMeta({
     const { loggedIn } = useUserSession()
 
     if (loggedIn.value)
-      return navigateTo('/')
+      return navigateTo('/me')
   },
 })
 
@@ -69,7 +69,7 @@ async function startPasskey(kind: 'signin' | 'create') {
       : register({ userName: `拉麵Now #${randomTag()}` }))
 
     await fetchSession()
-    await navigateTo('/')
+    await navigateTo('/me')
   }
   catch (error) {
     // Backing out of the system dialog isn't a failure, so it doesn't read as one.

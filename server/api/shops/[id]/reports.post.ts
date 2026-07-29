@@ -16,6 +16,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDb(event)
+  const session = await getUserSession(event)
 
   const shop = await db
     .select({ id: schema.shops.id })
@@ -29,7 +30,9 @@ export default defineEventHandler(async (event) => {
 
   const report = await db
     .insert(schema.reports)
-    .values({ shopId, people })
+    // Signed out means a null author, not a rejected report: filing anonymously
+    // stays the one-tap path it has always been.
+    .values({ shopId, people, userId: session.user?.id ?? null })
     .returning({ people: schema.reports.people, createdAt: schema.reports.createdAt })
     .get()
 
