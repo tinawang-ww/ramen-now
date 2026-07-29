@@ -5,6 +5,7 @@
 import type { ShopSummary } from '~~/shared/types'
 // Great-circle distance in km. Row rendering formats it; this page only sorts on it.
 import { distanceKm } from '~~/shared/geo'
+import { isRequestPending } from '~~/shared/queue'
 
 // `t` looks a message key up in the active locale. The locale itself lives in a
 // composable shared with SiteNav's language toggle, so it can change mid-session.
@@ -104,7 +105,11 @@ const sortedByDistance = computed(() => here.value !== null)
 // which empty-state sentence to show.
 const searching = computed(() => query.value.trim().length > 0)
 
-/** The bottom line does triple duty: hint, action feedback, location trouble. */
+/** Shops someone flagged and nobody has answered yet — the board's open asks. */
+const pendingCount = computed(() =>
+  shops.value.filter(shop => isRequestPending(shop.requestedAt, shop.reportedAt, nowMs.value)).length)
+
+/** The bottom line does quadruple duty: feedback, location trouble, open asks, hint. */
 const statusLine = computed(() => {
   // Most specific first: a message about what the user just did outranks
   // everything, since they are looking at the line because they acted.
@@ -117,6 +122,10 @@ const statusLine = computed(() => {
   // Then any standing location failure — denied, timed out, insecure origin.
   if (locationMessage.value)
     return locationMessage.value
+  // Surfacing the asks turns "someone requested somewhere" into a visible todo,
+  // which is the nudge this board runs on.
+  if (pendingCount.value > 0)
+    return t('board.pendingRequests', { count: pendingCount.value })
 
   // Nothing to report: the resting hint explaining what the board is for.
   return t('board.hint')
@@ -167,6 +176,9 @@ async function report(shop: ShopSummary, people: number) {
     // Adopt the server's timestamp, so "x minutes ago" is measured from when the
     // report actually landed rather than from this device's possibly-skewed clock.
     shop.reportedAt = result.reportedAt
+    // Closing the loop out loud: a thank-you costs nothing and reporting again
+    // tomorrow is the whole game.
+    flash(t('board.reported'))
   }
   catch {
     // Assign back onto the same object rather than replacing it in the array —
@@ -271,10 +283,10 @@ const NAME_FIELD = {
 
     <!-- Title and one-line description of what the board is. -->
     <header class="mt-6">
-      <h1 class="text-[22px] leading-7 tracking-tight text-black/90">
+      <h1 class="text-[22px] leading-7 tracking-tight text-ink/90">
         {{ t('board.title') }}
       </h1>
-      <p class="mt-1.5 text-[13px] leading-5 text-black/35">
+      <p class="mt-1.5 text-[13px] leading-5 text-ink/35">
         {{ t('board.tagline') }}
       </p>
     </header>
@@ -302,7 +314,7 @@ const NAME_FIELD = {
         <button
           v-if="searching"
           type="button"
-          class="shrink-0 text-[12px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+          class="shrink-0 text-[12px] leading-5 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
           @click="query = ''"
         >
           {{ t('common.clear') }}
@@ -327,18 +339,18 @@ const NAME_FIELD = {
         v-if="!sortedByDistance"
         type="button"
         :disabled="locationStatus === 'locating' || locationDenied"
-        class="text-black/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-black/80"
+        class="text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-ink/80"
         @click="locate()"
       >
         {{ locationStatus === 'locating' ? t('board.locating') : t('board.findNearby') }}
       </button>
 
       <!-- Once located there is nothing left to ask for, so the button becomes a label. -->
-      <span v-else class="text-black/40">{{ t('board.sortedByDistance') }}</span>
+      <span v-else class="text-ink/40">{{ t('board.sortedByDistance') }}</span>
     </div>
 
     <!-- The board itself. -->
-    <ul v-if="rows.length" class="mt-8 border-t border-black/[0.07]">
+    <ul v-if="rows.length" class="mt-8 border-t border-ink/[0.07]">
       <ShopRow
         v-for="(row, index) in rows"
         :key="row.shop.id"
@@ -370,7 +382,7 @@ const NAME_FIELD = {
       empty search names what was looked for and leads into the add form below,
       while an empty board is a first-run state.
     -->
-    <p v-if="!rows.length" class="mt-12 text-[13px] leading-5 text-black/35">
+    <p v-if="!rows.length" class="mt-12 text-[13px] leading-5 text-ink/35">
       {{ searching ? t('board.emptySearch', { query: query.trim() }) : t('board.empty') }}
     </p>
 
@@ -379,9 +391,46 @@ const NAME_FIELD = {
       without moving focus, which is how a failed report gets reported at all.
       It darkens when it has something to say and fades back for the resting hint.
     -->
+    <div class="mt-8">
+      <button
+        v-if="!adding"
+        type="button"
+        class="text-[13px] leading-5 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/80"
+        @click="startAdd()"
+      >
+        {{ t('board.addShop') }}
+      </button>
+
+      <form v-else class="flex items-center gap-3" @submit.prevent="addShop">
+        <input
+          ref="nameInput"
+          v-model="draftName"
+          type="text"
+          maxlength="40"
+          :placeholder="t('board.shopNamePlaceholder')"
+          class="min-w-0 flex-1 border-b border-ink/15 pb-1.5 text-[15px] leading-6 text-ink/90 outline-none transition-colors duration-200 placeholder:text-ink/25 focus:border-ink/60"
+          @keydown.esc="cancelAdd"
+        >
+        <button
+          type="submit"
+          :disabled="!draftName.trim() || submitting"
+          class="shrink-0 text-[13px] leading-5 text-ink/80 transition-[opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25"
+        >
+          {{ t('board.add') }}
+        </button>
+        <button
+          type="button"
+          class="shrink-0 text-[13px] leading-5 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
+          @click="cancelAdd"
+        >
+          {{ t('common.cancel') }}
+        </button>
+      </form>
+    </div>
+
     <p
       class="mt-6 text-[11px] leading-4 transition-colors duration-200"
-      :class="notice || locationMessage || locationNudging ? 'text-black/55' : 'text-black/25'"
+      :class="notice ? 'text-accent/90' : (locationMessage || locationNudging ? 'text-ink/55' : 'text-ink/25')"
       role="status"
     >
       {{ statusLine }}

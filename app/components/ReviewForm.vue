@@ -95,12 +95,12 @@ function submit() {
 const MENU = {
   ...LINE_FIELD,
   trailing: () => 'hidden',
-  content: () => 'max-h-[min(15rem,var(--reka-combobox-content-available-height,15rem))] w-(--reka-combobox-trigger-width) origin-(--reka-combobox-content-transform-origin) pointer-events-auto flex flex-col overflow-hidden rounded-lg bg-white ring-1 ring-black/[0.07] data-[state=open]:animate-[scale-in_100ms_var(--ease-out-strong)] data-[state=closed]:animate-[scale-out_100ms_var(--ease-out-strong)]',
+  content: () => 'max-h-[min(15rem,var(--reka-combobox-content-available-height,15rem))] w-(--reka-combobox-trigger-width) origin-(--reka-combobox-content-transform-origin) pointer-events-auto flex flex-col overflow-hidden rounded-lg bg-white ring-1 ring-ink/[0.07] data-[state=open]:animate-[scale-in_100ms_var(--ease-out-strong)] data-[state=closed]:animate-[scale-out_100ms_var(--ease-out-strong)]',
   viewport: () => 'relative flex-1 scroll-py-1 overflow-y-auto',
   group: () => 'p-1',
-  item: () => 'relative flex w-full cursor-default select-none items-center rounded-md px-2 py-1.5 text-[13px] leading-5 text-black/50 outline-none transition-colors data-highlighted:bg-black/[0.03] data-highlighted:text-black/90',
+  item: () => 'relative flex w-full cursor-default select-none items-center rounded-md px-2 py-1.5 text-[13px] leading-5 text-ink/50 outline-none transition-colors data-highlighted:bg-ink/[0.03] data-highlighted:text-ink/90',
   itemTrailing: () => 'hidden',
-  empty: () => 'px-3 py-2 text-[13px] leading-5 text-black/30',
+  empty: () => 'px-3 py-2 text-[13px] leading-5 text-ink/30',
 }
 
 /** The one field holding a number, so the one field with tabular figures. */
@@ -195,14 +195,14 @@ const BODY_FIELD = {
       <button
         type="submit"
         :disabled="!ready || submitting"
-        class="rounded-full bg-black px-5 py-2.5 text-[13px] leading-4 text-white transition-[opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25"
+        class="rounded-full bg-accent px-5 py-2.5 text-[13px] leading-4 text-white transition-[opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25"
       >
         {{ submitting ? t('reviewForm.submitting') : t('reviewForm.submit') }}
       </button>
 
       <button
         type="button"
-        class="text-[13px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+        class="text-[13px] leading-5 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
         @click="emit('cancel')"
       >
         {{ t('common.cancel') }}

@@ -104,12 +104,12 @@ const shownPeople = computed(() => props.open ? count.value : props.shop.people)
 const shownFresh = computed(() => props.open || fresh.value)
 
 /** 定義 Modal 中增減排隊人數按鈕的共用 CSS 樣式字串 */
-const STEP_BUTTON = 'size-9 rounded-full border border-black/[0.09] text-[15px] leading-none text-black/70 transition-[transform,border-color,opacity] duration-150 ease-out-strong active:scale-[0.94] disabled:opacity-25 hover-fine:hover:border-black/25'
+const STEP_BUTTON = 'size-9 rounded-full border border-ink/[0.09] text-[15px] leading-none text-ink/70 transition-[transform,border-color,opacity] duration-150 ease-out-strong active:scale-[0.94] disabled:opacity-25 hover-fine:hover:border-ink/25'
 </script>
 
 <template>
   <!-- 每間店的列容器，底部加上邊界分隔線 -->
-  <li class="border-b border-black/[0.07]">
+  <li class="border-b border-ink/[0.07]">
     <!-- 一般檢視區塊 (這部分總是會顯示在畫面上) -->
     <div class="flex w-full items-center gap-4 py-5">
       <!-- 請求回報按鈕 -->
@@ -119,7 +119,7 @@ const STEP_BUTTON = 'size-9 rounded-full border border-black/[0.09] text-[15px] 
         type="button"
         :disabled="requested"
         class="shrink-0 flex size-10 items-center justify-center rounded-full transition-[color,transform,background-color] duration-150 ease-out-strong active:scale-[0.97] focus:outline-none"
-        :class="requested ? 'bg-black/10 text-black/90' : 'bg-black/5 text-black/40 hover-fine:hover:bg-black/10 hover-fine:hover:text-black/70'"
+        :class="requested ? 'bg-ink/10 text-ink/90' : 'bg-ink/5 text-ink/40 hover-fine:hover:bg-ink/10 hover-fine:hover:text-ink/70'"
         @click.stop="emit('request')"
         :aria-label="requested ? t('shopRow.alreadyRequested') : t('shopRow.requestReport')"
       >
@@ -135,12 +135,12 @@ const STEP_BUTTON = 'size-9 rounded-full border border-black/[0.09] text-[15px] 
       >
         <!-- 左半邊：包含店名、距離與回報時間等資訊 -->
         <span class="min-w-0">
-          <span class="flex min-w-0 items-start gap-2 text-[17px] leading-6 tracking-tight text-black/90">
+          <span class="flex min-w-0 items-start gap-2 text-[17px] leading-6 tracking-tight text-ink/90">
             <!-- 顯示店家名稱，長度過長時會自動換行 break-words -->
             <span class="break-words">{{ shop.name }}</span>
           </span>
           <!-- 顯示副資訊列：距離與回報時間 -->
-          <span class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 tabular-nums text-[12px] leading-4 text-black/35">
+          <span class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 tabular-nums text-[12px] leading-4 text-ink/35">
             <!-- 顯示 computed 計算出來的 meta 字串 -->
             <span>{{ meta }}</span>
 
@@ -167,9 +167,9 @@ const STEP_BUTTON = 'size-9 rounded-full border border-black/[0.09] text-[15px] 
         <div class="bg-white p-6 rounded-[20px] shadow-sm">
           <!-- Modal 頂部：顯示店名與關閉按鈕 -->
           <div class="flex items-start justify-between mb-8 gap-4">
-            <h3 class="text-[17px] leading-6 font-medium text-black/90 break-words">{{ shop.name }}</h3>
+            <h3 class="text-[17px] leading-6 font-medium text-ink/90 break-words">{{ shop.name }}</h3>
             <!-- 點擊叉叉按鈕觸發 'toggle' 關閉 Modal -->
-            <button type="button" class="mt-0.5 shrink-0 text-black/40 transition-colors hover:text-black/70" @click="emit('toggle')">
+            <button type="button" class="mt-0.5 shrink-0 text-ink/40 transition-colors hover:text-ink/70" @click="emit('toggle')">
               <UIcon name="material-symbols:close" class="size-6" />
             </button>
           </div>
@@ -187,7 +187,7 @@ const STEP_BUTTON = 'size-9 rounded-full border border-black/[0.09] text-[15px] 
                 :aria-label="t('shopRow.countAria')"
                 :ui="{
                   root: () => 'flex items-center gap-1.5',
-                  base: () => 'order-2 w-11 rounded-lg border border-transparent py-1 text-center text-[17px] leading-6 tabular-nums text-black/90 outline-none transition-colors duration-200 focus:border-black/15',
+                  base: () => 'order-2 w-11 rounded-lg border border-transparent py-1 text-center text-[17px] leading-6 tabular-nums text-ink/90 outline-none transition-colors duration-200 focus:border-ink/15',
                   decrement: () => 'order-1 flex items-center',
                   increment: () => 'order-3 flex items-center',
                 }"
@@ -207,14 +207,14 @@ const STEP_BUTTON = 'size-9 rounded-full border border-black/[0.09] text-[15px] 
               </UInputNumber>
               
               <!-- 顯示 "人排隊中" 之類的提示文字 -->
-              <span class="text-[14px] text-black/50">{{ t('shopRow.inLine') }}</span>
+              <span class="text-[14px] text-ink/50">{{ t('shopRow.inLine') }}</span>
             </div>
 
             <!-- 送出回報按鈕 -->
             <!-- 點擊時觸發 'report' 事件，並帶上當前選定的人數 (count) -->
             <button
               type="button"
-              class="w-full rounded-full bg-black py-3.5 text-[15px] font-medium leading-5 text-white transition-transform duration-150 ease-out-strong active:scale-[0.98]"
+              class="w-full rounded-full bg-accent py-3.5 text-[15px] font-medium leading-5 text-white transition-transform duration-150 ease-out-strong active:scale-[0.98]"
               @click="emit('report', count)"
             >
               <!-- 顯示 "回報" 或類似的按鈕文字 -->

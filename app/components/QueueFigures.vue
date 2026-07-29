@@ -13,9 +13,9 @@ const drawn = computed(() => Math.max(figures.value, 1))
 
 const tone = computed(() => {
   if (figures.value === 0)
-    return props.people === null ? 'text-black/[0.06]' : 'text-black/[0.12]'
+    return props.people === null ? 'text-ink/[0.06]' : 'text-ink/[0.12]'
 
-  return props.fresh ? 'text-black/75' : 'text-black/20'
+  return props.fresh ? 'text-ink/75' : 'text-ink/20'
 })
 </script>
 
@@ -41,7 +41,7 @@ const tone = computed(() => {
 
     <span
       class="min-w-[1.75ch] text-right text-[15px] leading-5 tabular-nums transition-colors duration-200"
-      :class="people === null ? 'text-black/25' : (fresh ? 'text-black/90' : 'text-black/30')"
+      :class="people === null ? 'text-ink/25' : (fresh ? 'text-ink/90' : 'text-ink/30')"
     >
       {{ people === null ? '—' : people }}
     </span>

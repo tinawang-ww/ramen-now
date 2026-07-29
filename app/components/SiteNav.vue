@@ -19,8 +19,8 @@ const { t, toggleLocale } = useLocale()
         exact
         :to="surface.path"
         class="text-[13px] leading-5 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97]"
-        active-class="text-black/90"
-        inactive-class="text-black/30 hover-fine:hover:text-black/60"
+        active-class="text-ink/90"
+        inactive-class="text-ink/30 hover-fine:hover:text-ink/60"
       >
         {{ t(surface.labelKey) }}
       </ULink>
@@ -32,7 +32,7 @@ const { t, toggleLocale } = useLocale()
         raw
         as="button"
         :aria-label="t('nav.localeAria')"
-        class="text-[11px] leading-4 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+        class="text-[11px] leading-4 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
         @click="toggleLocale()"
       >
         {{ t('nav.localeButton') }}
@@ -42,7 +42,7 @@ const { t, toggleLocale } = useLocale()
       <ULink
         raw
         :to="loggedIn ? '/me' : '/login'"
-        class="max-w-[7rem] truncate text-[11px] leading-4 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+        class="max-w-[7rem] truncate text-[11px] leading-4 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
       >
         {{ loggedIn ? user?.label : t('nav.signIn') }}
       </ULink>
