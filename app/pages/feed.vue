@@ -34,6 +34,13 @@ watch(debounced, (value) => {
   router.replace({ query: value.trim() ? { shop: value.trim() } : {} })
 })
 
+// Tapping a shop name on this page lands back here with a new ?shop= — keep
+// the search box in sync so the filter is visible and clearable.
+watch(() => route.query.shop, (value) => {
+  if (typeof value === 'string' && value !== query.value.trim())
+    query.value = value
+})
+
 const searching = computed(() => query.value.trim().length > 0)
 
 const now = useNow({ interval: 30_000 })
@@ -99,27 +106,27 @@ async function submit(payload: {
     <SiteNav />
 
     <header class="mt-6">
-      <h1 class="text-[22px] leading-7 tracking-tight text-black/90">
+      <h1 class="text-[22px] leading-7 tracking-tight text-ink/90">
         {{ t('feed.title') }}
       </h1>
-      <p class="mt-1.5 text-[13px] leading-5 text-black/35">
+      <p class="mt-1.5 text-[13px] leading-5 text-ink/35">
         {{ t('feed.tagline') }}
       </p>
     </header>
 
-    <div class="mt-8 flex items-center gap-3 border-b border-black/[0.07] pb-1.5">
+    <div class="mt-8 flex items-center gap-3 border-b border-ink/[0.07] pb-1.5">
       <input
         v-model="query"
         type="search"
         enterkeyhint="search"
         :placeholder="t('common.searchShops')"
         :aria-label="t('common.searchShops')"
-        class="min-w-0 flex-1 bg-transparent text-[15px] leading-6 text-black/90 outline-none placeholder:text-black/25 [&::-webkit-search-cancel-button]:hidden"
+        class="min-w-0 flex-1 bg-transparent text-[15px] leading-6 text-ink/90 outline-none placeholder:text-ink/25 [&::-webkit-search-cancel-button]:hidden"
       >
       <button
         v-if="searching"
         type="button"
-        class="shrink-0 text-[12px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+        class="shrink-0 text-[12px] leading-5 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
         @click="query = ''"
       >
         {{ t('common.clear') }}
@@ -131,7 +138,7 @@ async function submit(payload: {
       <NuxtLink
         v-if="!loggedIn"
         to="/login"
-        class="text-[13px] leading-5 text-black/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/80"
+        class="text-[13px] leading-5 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/80"
       >
         {{ t('feed.signInToWrite') }}
       </NuxtLink>
@@ -139,7 +146,7 @@ async function submit(payload: {
       <button
         v-else-if="!writing"
         type="button"
-        class="text-[13px] leading-5 text-black/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/80"
+        class="text-[13px] leading-5 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/80"
         @click="writing = true"
       >
         {{ t('feed.write') }}
@@ -153,7 +160,7 @@ async function submit(payload: {
       />
     </div>
 
-    <ul v-if="reviews.length" class="mt-8 border-t border-black/[0.07]">
+    <ul v-if="reviews.length" class="mt-8 border-t border-ink/[0.07]">
       <ReviewCard
         v-for="(review, index) in reviews"
         :key="review.id"
@@ -164,13 +171,13 @@ async function submit(payload: {
       />
     </ul>
 
-    <p v-else class="mt-12 text-[13px] leading-5 text-black/35">
+    <p v-else class="mt-12 text-[13px] leading-5 text-ink/35">
       {{ searching ? t('feed.emptySearch', { query: query.trim() }) : t('feed.empty') }}
     </p>
 
     <p
       class="mt-6 text-[11px] leading-4 transition-colors duration-200"
-      :class="notice ? 'text-black/55' : 'text-black/25'"
+      :class="notice ? 'text-accent/90' : 'text-ink/25'"
       role="status"
     >
       {{ statusLine }}

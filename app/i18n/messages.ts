@@ -32,6 +32,8 @@ const zh = {
   'board.add': '加入',
   'board.hint': '超過 90 分鐘的回報會變淡，代表不能當「現在」看。',
   'board.locationNudge': '還在等你允許使用位置…',
+  'board.reported': '已回報，謝謝你！',
+  'board.pendingRequests': '有 {count} 家店在等人回報，路過幫看一眼。',
   'board.reportFailed': '回報失敗，請再試一次',
   'board.requestSent': '已標記這家需要回報',
   'board.requestFailed': '要求失敗，請再試一次',
@@ -47,6 +49,7 @@ const zh = {
   'shopRow.report': '回報',
   'shopRow.alreadyRequested': '已經有人要求回報',
   'shopRow.requestReport': '不在現場？要求回報',
+  'shopRow.readReviews': '看這家的食記 →',
 
   'feed.seoTitle': '食記 · 拉麵Now',
   'feed.seoDescription': '大家吃過的拉麵：點了什麼、多少錢、當時排隊排多久。',
@@ -143,6 +146,8 @@ const en = {
   'board.add': 'Add',
   'board.hint': 'Reports older than 90 minutes fade out — don’t read them as “now”.',
   'board.locationNudge': 'Still waiting for you to allow location access…',
+  'board.reported': 'Reported — thank you!',
+  'board.pendingRequests': 'Shops waiting for a report: {count}. Help out if you walk past one.',
   'board.reportFailed': 'Couldn’t send the report — please try again.',
   'board.requestSent': 'Marked this shop as needing a report.',
   'board.requestFailed': 'Couldn’t send the request — please try again.',
@@ -158,6 +163,7 @@ const en = {
   'shopRow.report': 'Report',
   'shopRow.alreadyRequested': 'Someone already asked for a report',
   'shopRow.requestReport': 'Not there? Ask for a report',
+  'shopRow.readReviews': 'Read its reviews →',
 
   'feed.seoTitle': 'Reviews · Ramen Now',
   'feed.seoDescription': 'Bowls people have eaten: what they ordered, what it cost, and how long the line was.',

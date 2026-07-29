@@ -85,28 +85,28 @@ async function addPasskey() {
   <!-- The right edge is wider on phones, where the scroll indicator rides over it. -->
   <main class="mx-auto min-h-[100dvh] w-full max-w-[30rem] pb-24 pl-6 pr-8 pt-20 sm:pr-6">
     <header>
-      <h1 class="text-[22px] leading-7 tracking-tight text-black/90">
+      <h1 class="text-[22px] leading-7 tracking-tight text-ink/90">
         {{ t('me.title') }}
       </h1>
-      <p class="mt-1.5 text-[13px] leading-5 text-black/35">
+      <p class="mt-1.5 text-[13px] leading-5 text-ink/35">
         {{ t('me.tagline') }}
       </p>
     </header>
 
     <!-- A bare 0 reads as broken, so an empty count says something instead. -->
-    <p v-if="count === 0" class="mt-12 text-[17px] leading-7 text-black/70">
+    <p v-if="count === 0" class="mt-12 text-[17px] leading-7 text-ink/70">
       {{ t('me.zero') }}
     </p>
 
-    <p v-else class="mt-12 text-[17px] leading-7 text-black/70">
+    <p v-else class="mt-12 text-[17px] leading-7 text-ink/70">
       {{ t('me.countPrefix') }}
-      <span class="mx-1.5 text-[40px] leading-none tracking-tight text-black/90 tabular-nums">{{ count }}</span>
+      <span class="mx-1.5 text-[40px] leading-none tracking-tight text-ink/90 tabular-nums">{{ count }}</span>
       {{ t('me.countSuffix') }}
     </p>
 
     <p
       class="mt-8 text-[11px] leading-4 transition-colors duration-200"
-      :class="notice || supported === false ? 'text-black/55' : 'text-black/25'"
+      :class="notice ? 'text-accent/90' : (supported === false ? 'text-ink/55' : 'text-ink/25')"
       role="status"
     >
       {{ statusLine }}
@@ -114,18 +114,18 @@ async function addPasskey() {
 
     <NuxtLink
       to="/"
-      class="mt-10 inline-block text-[13px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+      class="mt-10 inline-block text-[13px] leading-5 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
     >
       {{ t('common.backToBoard') }}
     </NuxtLink>
 
     <!-- A second passkey is a few people's problem, so it sits at logout's weight. -->
     <footer class="mt-16 flex flex-wrap items-baseline gap-x-4 gap-y-2 text-[11px] leading-4">
-      <span class="text-black/25">{{ t('me.currentUser', { label: user?.label ?? '' }) }}</span>
+      <span class="text-ink/25">{{ t('me.currentUser', { label: user?.label ?? '' }) }}</span>
       <button
         type="button"
         :disabled="working !== null"
-        class="text-black/35 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-black/70"
+        class="text-ink/35 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-ink/70"
         @click="signOut()"
       >
         {{ working === 'signout' ? t('me.signingOut') : t('me.signOut') }}
@@ -133,7 +133,7 @@ async function addPasskey() {
       <button
         type="button"
         :disabled="supported === false || working !== null"
-        class="text-black/35 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-black/70"
+        class="text-ink/35 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-ink/70"
         @click="addPasskey()"
       >
         {{ working === 'passkey' ? t('me.addingPasskey') : t('me.addPasskey') }}

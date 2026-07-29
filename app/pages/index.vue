@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ShopSummary } from '~~/shared/types'
 import { distanceKm } from '~~/shared/geo'
+import { isRequestPending } from '~~/shared/queue'
 
 const { t } = useLocale()
 
@@ -66,7 +67,11 @@ const rows = computed(() => {
 const sortedByDistance = computed(() => here.value !== null)
 const searching = computed(() => query.value.trim().length > 0)
 
-/** The bottom line does triple duty: hint, action feedback, location trouble. */
+/** Shops someone flagged and nobody has answered yet — the board's open asks. */
+const pendingCount = computed(() =>
+  shops.value.filter(shop => isRequestPending(shop.requestedAt, shop.reportedAt, nowMs.value)).length)
+
+/** The bottom line does quadruple duty: feedback, location trouble, open asks, hint. */
 const statusLine = computed(() => {
   if (notice.value)
     return notice.value
@@ -74,6 +79,10 @@ const statusLine = computed(() => {
     return t('board.locationNudge')
   if (locationMessage.value)
     return locationMessage.value
+  // Surfacing the asks turns "someone requested somewhere" into a visible todo,
+  // which is the nudge this board runs on.
+  if (pendingCount.value > 0)
+    return t('board.pendingRequests', { count: pendingCount.value })
 
   return t('board.hint')
 })
@@ -106,6 +115,9 @@ async function report(shop: ShopSummary, people: number) {
       body: { people },
     })
     shop.reportedAt = result.reportedAt
+    // Closing the loop out loud: a thank-you costs nothing and reporting again
+    // tomorrow is the whole game.
+    flash(t('board.reported'))
   }
   catch {
     Object.assign(shop, previous)
@@ -193,27 +205,27 @@ async function addShop() {
     <SiteNav />
 
     <header class="mt-6">
-      <h1 class="text-[22px] leading-7 tracking-tight text-black/90">
+      <h1 class="text-[22px] leading-7 tracking-tight text-ink/90">
         {{ t('board.title') }}
       </h1>
-      <p class="mt-1.5 text-[13px] leading-5 text-black/35">
+      <p class="mt-1.5 text-[13px] leading-5 text-ink/35">
         {{ t('board.tagline') }}
       </p>
     </header>
 
-    <div class="mt-8 flex items-center gap-3 border-b border-black/[0.07] pb-1.5">
+    <div class="mt-8 flex items-center gap-3 border-b border-ink/[0.07] pb-1.5">
       <input
         v-model="query"
         type="search"
         enterkeyhint="search"
         :placeholder="t('common.searchShops')"
         :aria-label="t('common.searchShops')"
-        class="min-w-0 flex-1 bg-transparent text-[15px] leading-6 text-black/90 outline-none placeholder:text-black/25 [&::-webkit-search-cancel-button]:hidden"
+        class="min-w-0 flex-1 bg-transparent text-[15px] leading-6 text-ink/90 outline-none placeholder:text-ink/25 [&::-webkit-search-cancel-button]:hidden"
       >
       <button
         v-if="searching"
         type="button"
-        class="shrink-0 text-[12px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+        class="shrink-0 text-[12px] leading-5 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
         @click="query = ''"
       >
         {{ t('common.clear') }}
@@ -226,16 +238,16 @@ async function addShop() {
         v-if="!sortedByDistance"
         type="button"
         :disabled="locationStatus === 'locating' || locationDenied"
-        class="text-black/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-black/80"
+        class="text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-ink/80"
         @click="locate()"
       >
         {{ locationStatus === 'locating' ? t('board.locating') : t('board.findNearby') }}
       </button>
 
-      <span v-else class="text-black/40">{{ t('board.sortedByDistance') }}</span>
+      <span v-else class="text-ink/40">{{ t('board.sortedByDistance') }}</span>
     </div>
 
-    <ul v-if="rows.length" class="mt-8 border-t border-black/[0.07]">
+    <ul v-if="rows.length" class="mt-8 border-t border-ink/[0.07]">
       <ShopRow
         v-for="(row, index) in rows"
         :key="row.shop.id"
@@ -251,7 +263,7 @@ async function addShop() {
       />
     </ul>
 
-    <p v-if="!rows.length" class="mt-12 text-[13px] leading-5 text-black/35">
+    <p v-if="!rows.length" class="mt-12 text-[13px] leading-5 text-ink/35">
       {{ searching ? t('board.emptySearch', { query: query.trim() }) : t('board.empty') }}
     </p>
 
@@ -259,7 +271,7 @@ async function addShop() {
       <button
         v-if="!adding"
         type="button"
-        class="text-[13px] leading-5 text-black/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/80"
+        class="text-[13px] leading-5 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/80"
         @click="startAdd()"
       >
         {{ t('board.addShop') }}
@@ -272,19 +284,19 @@ async function addShop() {
           type="text"
           maxlength="40"
           :placeholder="t('board.shopNamePlaceholder')"
-          class="min-w-0 flex-1 border-b border-black/15 pb-1.5 text-[15px] leading-6 text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
+          class="min-w-0 flex-1 border-b border-ink/15 pb-1.5 text-[15px] leading-6 text-ink/90 outline-none transition-colors duration-200 placeholder:text-ink/25 focus:border-ink/60"
           @keydown.esc="cancelAdd"
         >
         <button
           type="submit"
           :disabled="!draftName.trim() || submitting"
-          class="shrink-0 text-[13px] leading-5 text-black/80 transition-[opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25"
+          class="shrink-0 text-[13px] leading-5 text-ink/80 transition-[opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25"
         >
           {{ t('board.add') }}
         </button>
         <button
           type="button"
-          class="shrink-0 text-[13px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+          class="shrink-0 text-[13px] leading-5 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
           @click="cancelAdd"
         >
           {{ t('common.cancel') }}
@@ -294,7 +306,7 @@ async function addShop() {
 
     <p
       class="mt-6 text-[11px] leading-4 transition-colors duration-200"
-      :class="notice || locationMessage || locationNudging ? 'text-black/55' : 'text-black/25'"
+      :class="notice ? 'text-accent/90' : (locationMessage || locationNudging ? 'text-ink/55' : 'text-ink/25')"
       role="status"
     >
       {{ statusLine }}

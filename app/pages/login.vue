@@ -87,10 +87,10 @@ async function startPasskey(kind: 'signin' | 'create') {
 <template>
   <main class="mx-auto min-h-[100dvh] w-full max-w-[30rem] px-6 pb-24 pt-20">
     <header>
-      <h1 class="text-[22px] leading-7 tracking-tight text-black/90">
+      <h1 class="text-[22px] leading-7 tracking-tight text-ink/90">
         {{ t('login.title') }}
       </h1>
-      <p class="mt-1.5 text-[13px] leading-5 text-black/35">
+      <p class="mt-1.5 text-[13px] leading-5 text-ink/35">
         {{ t('login.tagline') }}
       </p>
     </header>
@@ -100,7 +100,7 @@ async function startPasskey(kind: 'signin' | 'create') {
       <button
         type="button"
         :disabled="supported === false || working !== null"
-        class="text-[15px] leading-6 text-black/90 transition-[opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25"
+        class="text-[15px] leading-6 text-ink/90 transition-[opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25"
         @click="startPasskey('signin')"
       >
         {{ working === 'signin' ? t('login.signingIn') : t('login.signIn') }}
@@ -109,7 +109,7 @@ async function startPasskey(kind: 'signin' | 'create') {
       <button
         type="button"
         :disabled="supported === false || working !== null"
-        class="text-[13px] leading-5 text-black/40 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25 hover-fine:hover:text-black/80"
+        class="text-[13px] leading-5 text-ink/40 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25 hover-fine:hover:text-ink/80"
         @click="startPasskey('create')"
       >
         {{ working === 'create' ? t('login.creating') : t('login.create') }}
@@ -118,7 +118,7 @@ async function startPasskey(kind: 'signin' | 'create') {
 
     <p
       class="mt-6 text-[11px] leading-4 transition-colors duration-200"
-      :class="notice || supported === false ? 'text-black/55' : 'text-black/25'"
+      :class="notice ? 'text-accent/90' : (supported === false ? 'text-ink/55' : 'text-ink/25')"
       role="status"
     >
       {{ statusLine }}
@@ -126,7 +126,7 @@ async function startPasskey(kind: 'signin' | 'create') {
 
     <NuxtLink
       to="/"
-      class="mt-10 inline-block text-[13px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+      class="mt-10 inline-block text-[13px] leading-5 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
     >
       {{ t('common.backToBoard') }}
     </NuxtLink>

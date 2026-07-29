@@ -116,7 +116,7 @@ function submit() {
 <template>
   <form class="space-y-6" @submit.prevent="submit">
     <div>
-      <label class="block text-[11px] leading-4 text-black/30" for="review-shop">{{ t('reviewForm.shopLabel') }}</label>
+      <label class="block text-[11px] leading-4 text-ink/30" for="review-shop">{{ t('reviewForm.shopLabel') }}</label>
       <input
         id="review-shop"
         ref="shopInput"
@@ -125,14 +125,14 @@ function submit() {
         maxlength="40"
         autocomplete="off"
         :placeholder="t('reviewForm.shopPlaceholder')"
-        class="mt-1.5 w-full border-b border-black/15 bg-transparent pb-1.5 text-[15px] leading-6 text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
+        class="mt-1.5 w-full border-b border-ink/15 bg-transparent pb-1.5 text-[15px] leading-6 text-ink/90 outline-none transition-colors duration-200 placeholder:text-ink/25 focus:border-ink/60"
       >
 
       <ul v-if="suggestions.length" class="mt-2 space-y-1">
         <li v-for="shop in suggestions" :key="shop.id">
           <button
             type="button"
-            class="text-[13px] leading-5 text-black/50 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/90"
+            class="text-[13px] leading-5 text-ink/50 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/90"
             @click="pick(shop)"
           >
             {{ shop.name }}
@@ -144,7 +144,7 @@ function submit() {
         v-if="missing"
         type="button"
         :disabled="addingShop"
-        class="mt-2 text-[13px] leading-5 text-black/50 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-black/90"
+        class="mt-2 text-[13px] leading-5 text-ink/50 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-ink/90"
         @click="addShop()"
       >
         {{ addingShop ? t('reviewForm.addingShop') : t('reviewForm.addShopNamed', { name: shopQuery.trim() }) }}
@@ -152,19 +152,19 @@ function submit() {
     </div>
 
     <div>
-      <label class="block text-[11px] leading-4 text-black/30" for="review-ramen">{{ t('reviewForm.ramenLabel') }}</label>
+      <label class="block text-[11px] leading-4 text-ink/30" for="review-ramen">{{ t('reviewForm.ramenLabel') }}</label>
       <input
         id="review-ramen"
         v-model="ramen"
         type="text"
         :maxlength="MAX_RAMEN"
         :placeholder="t('reviewForm.ramenPlaceholder')"
-        class="mt-1.5 w-full border-b border-black/15 bg-transparent pb-1.5 text-[15px] leading-6 text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
+        class="mt-1.5 w-full border-b border-ink/15 bg-transparent pb-1.5 text-[15px] leading-6 text-ink/90 outline-none transition-colors duration-200 placeholder:text-ink/25 focus:border-ink/60"
       >
     </div>
 
     <div>
-      <label class="block text-[11px] leading-4 text-black/30" for="review-price">{{ t('reviewForm.priceLabel') }}</label>
+      <label class="block text-[11px] leading-4 text-ink/30" for="review-price">{{ t('reviewForm.priceLabel') }}</label>
       <input
         id="review-price"
         :value="price"
@@ -172,32 +172,32 @@ function submit() {
         inputmode="numeric"
         maxlength="4"
         :placeholder="t('reviewForm.pricePlaceholder')"
-        class="mt-1.5 w-full border-b border-black/15 bg-transparent pb-1.5 text-[15px] leading-6 tabular-nums text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
+        class="mt-1.5 w-full border-b border-ink/15 bg-transparent pb-1.5 text-[15px] leading-6 tabular-nums text-ink/90 outline-none transition-colors duration-200 placeholder:text-ink/25 focus:border-ink/60"
         @input="onPrice"
       >
     </div>
 
     <div>
-      <label class="block text-[11px] leading-4 text-black/30" for="review-queue">{{ t('reviewForm.queueLabel') }}</label>
+      <label class="block text-[11px] leading-4 text-ink/30" for="review-queue">{{ t('reviewForm.queueLabel') }}</label>
       <input
         id="review-queue"
         v-model="queue"
         type="text"
         :maxlength="MAX_QUEUE"
         :placeholder="t('reviewForm.queuePlaceholder')"
-        class="mt-1.5 w-full border-b border-black/15 bg-transparent pb-1.5 text-[15px] leading-6 text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
+        class="mt-1.5 w-full border-b border-ink/15 bg-transparent pb-1.5 text-[15px] leading-6 text-ink/90 outline-none transition-colors duration-200 placeholder:text-ink/25 focus:border-ink/60"
       >
     </div>
 
     <div>
-      <label class="block text-[11px] leading-4 text-black/30" for="review-body">{{ t('reviewForm.bodyLabel') }}</label>
+      <label class="block text-[11px] leading-4 text-ink/30" for="review-body">{{ t('reviewForm.bodyLabel') }}</label>
       <textarea
         id="review-body"
         v-model="body"
         rows="4"
         :maxlength="MAX_BODY"
         :placeholder="t('reviewForm.bodyPlaceholder')"
-        class="mt-1.5 w-full resize-none border-b border-black/15 bg-transparent pb-1.5 text-[15px] leading-6 text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
+        class="mt-1.5 w-full resize-none border-b border-ink/15 bg-transparent pb-1.5 text-[15px] leading-6 text-ink/90 outline-none transition-colors duration-200 placeholder:text-ink/25 focus:border-ink/60"
       />
     </div>
 
@@ -205,14 +205,14 @@ function submit() {
       <button
         type="submit"
         :disabled="!ready || submitting"
-        class="rounded-full bg-black px-5 py-2.5 text-[13px] leading-4 text-white transition-[opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25"
+        class="rounded-full bg-accent px-5 py-2.5 text-[13px] leading-4 text-white transition-[opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25"
       >
         {{ submitting ? t('reviewForm.submitting') : t('reviewForm.submit') }}
       </button>
 
       <button
         type="button"
-        class="text-[13px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+        class="text-[13px] leading-5 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
         @click="emit('cancel')"
       >
         {{ t('common.cancel') }}

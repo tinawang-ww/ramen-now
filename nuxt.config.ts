@@ -8,7 +8,7 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'zh-Hant-TW' },
-      meta: [{ name: 'theme-color', content: '#ffffff' }],
+      meta: [{ name: 'theme-color', content: '#fffdf9' }],
     },
   },
   colorMode: { preference: 'light', fallback: 'light' },

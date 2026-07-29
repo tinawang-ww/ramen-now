@@ -15,8 +15,8 @@ const { t, toggleLocale } = useLocale()
         :aria-current="route.path === surface.path ? 'page' : undefined"
         class="text-[13px] leading-5 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97]"
         :class="route.path === surface.path
-          ? 'text-black/90'
-          : 'text-black/30 hover-fine:hover:text-black/60'"
+          ? 'text-ink/90'
+          : 'text-ink/30 hover-fine:hover:text-ink/60'"
       >
         {{ t(surface.labelKey) }}
       </NuxtLink>
@@ -27,7 +27,7 @@ const { t, toggleLocale } = useLocale()
       <button
         type="button"
         :aria-label="t('nav.localeAria')"
-        class="text-[11px] leading-4 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+        class="text-[11px] leading-4 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
         @click="toggleLocale()"
       >
         {{ t('nav.localeButton') }}
@@ -36,7 +36,7 @@ const { t, toggleLocale } = useLocale()
       <!-- Signing out lives on /me, not here. -->
       <NuxtLink
         :to="loggedIn ? '/me' : '/login'"
-        class="max-w-[7rem] truncate text-[11px] leading-4 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+        class="max-w-[7rem] truncate text-[11px] leading-4 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
       >
         {{ loggedIn ? user?.label : t('nav.signIn') }}
       </NuxtLink>
