@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ShopSummary } from '~~/shared/types'
-import { MAX_BODY, MAX_QUEUE, MAX_RAMEN } from '~~/shared/review'
+import { MAX_BODY, MAX_PRICE, MAX_QUEUE, MAX_RAMEN } from '~~/shared/review'
 
 defineProps<{ submitting: boolean }>()
 
@@ -11,68 +11,43 @@ const emit = defineEmits<{
 
 const { t } = useLocale()
 
-/** Enough to recognise the one you mean without turning into a directory. */
-const SUGGESTION_LIMIT = 6
-
 // The board's own endpoint — no new API for picking a shop.
 const { data: shops } = await useFetch('/api/shops', {
   default: (): ShopSummary[] => [],
 })
 
-const shopQuery = ref('')
-const shopId = ref<number | null>(null)
+const shop = ref<ShopSummary | undefined>()
 const ramen = ref('')
-const price = ref('')
+const price = ref<number | undefined>()
 const queue = ref('')
 const body = ref('')
 
 const addingShop = ref(false)
-const shopInput = useTemplateRef<HTMLInputElement>('shopInput')
 
-onMounted(() => shopInput.value?.focus())
+/**
+ * Nothing matched what they typed, so put the shop on the board rather than
+ * dead-end. Reuses the board's dedupe, so a shop typed twice stays one shop —
+ * which is why the reply is looked up in the list before being appended.
+ */
+async function addShop(name: string) {
+  const tidy = name.trim()
 
-const chosen = computed(() => shops.value.find(shop => shop.id === shopId.value) ?? null)
-
-const suggestions = computed(() => {
-  const keyword = shopQuery.value.trim().toLowerCase()
-
-  if (!keyword || chosen.value)
-    return []
-
-  return shops.value
-    .filter(shop => shop.name.toLowerCase().includes(keyword))
-    .slice(0, SUGGESTION_LIMIT)
-})
-
-/** Nothing matched, so offer to put this shop on the board rather than dead-end. */
-const missing = computed(() =>
-  shopQuery.value.trim().length > 0 && !chosen.value && suggestions.value.length === 0,
-)
-
-function pick(shop: ShopSummary) {
-  shopId.value = shop.id
-  shopQuery.value = shop.name
-}
-
-/** Typing again after picking means they changed their mind. */
-watch(shopQuery, (value) => {
-  if (chosen.value && value !== chosen.value.name)
-    shopId.value = null
-})
-
-async function addShop() {
-  const name = shopQuery.value.trim()
-
-  if (!name || addingShop.value)
+  if (!tidy || addingShop.value)
     return
 
   addingShop.value = true
   try {
-    // Reuses the board's dedupe, so a shop typed twice stays one shop.
-    const shop = await $fetch('/api/shops', { method: 'POST', body: { name } })
-    shops.value = [...shops.value, {
-      id: shop.id,
-      name: shop.name,
+    const created = await $fetch('/api/shops', { method: 'POST', body: { name: tidy } })
+    const known = shops.value.find(candidate => candidate.id === created.id)
+
+    if (known) {
+      shop.value = known
+      return
+    }
+
+    const added: ShopSummary = {
+      id: created.id,
+      name: created.name,
       lat: null,
       lng: null,
       counterSeats: null,
@@ -80,128 +55,141 @@ async function addShop() {
       people: null,
       reportedAt: null,
       requestedAt: null,
-    }]
-    shopId.value = shop.id
-    shopQuery.value = shop.name
+    }
+    shops.value = [...shops.value, added]
+    shop.value = added
   }
   finally {
     addingShop.value = false
   }
 }
 
-function onPrice(event: Event) {
-  price.value = (event.target as HTMLInputElement).value.replace(/\D/g, '').slice(0, 4)
-}
-
 const ready = computed(() =>
-  shopId.value !== null
+  shop.value !== undefined
   && ramen.value.trim().length > 0
-  && Number(price.value) > 0
+  && price.value !== undefined && price.value > 0
   && queue.value.trim().length > 0
   && body.value.trim().length > 0,
 )
 
 function submit() {
-  if (!ready.value || shopId.value === null)
+  if (!ready.value || shop.value === undefined || price.value === undefined)
     return
 
   emit('submit', {
-    shopId: shopId.value,
+    shopId: shop.value.id,
     ramen: ramen.value.trim(),
-    price: Number(price.value),
+    price: price.value,
     queue: queue.value.trim(),
     body: body.value.trim(),
   })
+}
+
+/**
+ * The suggestion popover, pared back to a hairline card on top of the same rule
+ * as the other fields. The chevron and the selected-item check are hidden rather
+ * than restyled: both default to `i-lucide-*`, and nuxt.config only bundles the
+ * two seat icons, so drawing either would put an api.iconify.design round-trip
+ * in front of this form.
+ */
+const MENU = {
+  ...LINE_FIELD,
+  trailing: () => 'hidden',
+  content: () => 'max-h-[min(15rem,var(--reka-combobox-content-available-height,15rem))] w-(--reka-combobox-trigger-width) origin-(--reka-combobox-content-transform-origin) pointer-events-auto flex flex-col overflow-hidden rounded-lg bg-white ring-1 ring-black/[0.07] data-[state=open]:animate-[scale-in_100ms_var(--ease-out-strong)] data-[state=closed]:animate-[scale-out_100ms_var(--ease-out-strong)]',
+  viewport: () => 'relative flex-1 scroll-py-1 overflow-y-auto',
+  group: () => 'p-1',
+  item: () => 'relative flex w-full cursor-default select-none items-center rounded-md px-2 py-1.5 text-[13px] leading-5 text-black/50 outline-none transition-colors data-highlighted:bg-black/[0.03] data-highlighted:text-black/90',
+  itemTrailing: () => 'hidden',
+  empty: () => 'px-3 py-2 text-[13px] leading-5 text-black/30',
+}
+
+/** The one field holding a number, so the one field with tabular figures. */
+const PRICE_FIELD = {
+  ...LINE_FIELD,
+  base: () => `${LINE_FIELD.base()} tabular-nums`,
+}
+
+/** A textarea grows downwards, so its rule can't be centred on a line. */
+const BODY_FIELD = {
+  root: () => 'relative flex w-full',
+  base: () => `${LINE_FIELD.base()} resize-none`,
 }
 </script>
 
 <template>
   <form class="space-y-6" @submit.prevent="submit">
-    <div>
-      <label class="block text-[11px] leading-4 text-black/30" for="review-shop">{{ t('reviewForm.shopLabel') }}</label>
-      <input
-        id="review-shop"
-        ref="shopInput"
-        v-model="shopQuery"
-        type="text"
+    <UFormField :label="t('reviewForm.shopLabel')" :ui="FIELD_LABEL">
+      <!--
+        UInputMenu is the whole shop picker: filtering, keyboard navigation and
+        the aria-activedescendant wiring the old inline list never had.
+        `create-item` covers what used to need its own button — when nothing
+        matches, the last row offers to add what they typed, and choosing it
+        fires @create.
+      -->
+      <UInputMenu
+        v-model="shop"
+        autofocus
+        create-item
+        :items="shops"
+        label-key="name"
+        :filter-fields="['name']"
         maxlength="40"
         autocomplete="off"
         :placeholder="t('reviewForm.shopPlaceholder')"
-        class="mt-1.5 w-full border-b border-black/15 bg-transparent pb-1.5 text-[15px] leading-6 text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
+        :ui="MENU"
+        @create="addShop"
       >
+        <template #create-item-label="{ item }">
+          {{ addingShop ? t('reviewForm.addingShop') : t('reviewForm.addShopNamed', { name: item }) }}
+        </template>
+      </UInputMenu>
+    </UFormField>
 
-      <ul v-if="suggestions.length" class="mt-2 space-y-1">
-        <li v-for="shop in suggestions" :key="shop.id">
-          <button
-            type="button"
-            class="text-[13px] leading-5 text-black/50 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/90"
-            @click="pick(shop)"
-          >
-            {{ shop.name }}
-          </button>
-        </li>
-      </ul>
-
-      <button
-        v-if="missing"
-        type="button"
-        :disabled="addingShop"
-        class="mt-2 text-[13px] leading-5 text-black/50 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-black/90"
-        @click="addShop()"
-      >
-        {{ addingShop ? t('reviewForm.addingShop') : t('reviewForm.addShopNamed', { name: shopQuery.trim() }) }}
-      </button>
-    </div>
-
-    <div>
-      <label class="block text-[11px] leading-4 text-black/30" for="review-ramen">{{ t('reviewForm.ramenLabel') }}</label>
-      <input
-        id="review-ramen"
+    <UFormField :label="t('reviewForm.ramenLabel')" :ui="FIELD_LABEL">
+      <UInput
         v-model="ramen"
-        type="text"
         :maxlength="MAX_RAMEN"
         :placeholder="t('reviewForm.ramenPlaceholder')"
-        class="mt-1.5 w-full border-b border-black/15 bg-transparent pb-1.5 text-[15px] leading-6 text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
-      >
-    </div>
+        :ui="LINE_FIELD"
+      />
+    </UFormField>
 
-    <div>
-      <label class="block text-[11px] leading-4 text-black/30" for="review-price">{{ t('reviewForm.priceLabel') }}</label>
-      <input
-        id="review-price"
-        :value="price"
-        type="text"
-        inputmode="numeric"
-        maxlength="4"
+    <UFormField :label="t('reviewForm.priceLabel')" :ui="FIELD_LABEL">
+      <!--
+        UInputNumber rather than a text field scrubbed of non-digits: it holds a
+        number, so the payload needs no parsing, and it enforces the same 1–9999
+        the server does. Steppers off — nobody nudges a price by one.
+      -->
+      <UInputNumber
+        v-model="price"
+        :min="1"
+        :max="MAX_PRICE"
+        :increment="false"
+        :decrement="false"
+        :format-options="{ useGrouping: false, maximumFractionDigits: 0 }"
         :placeholder="t('reviewForm.pricePlaceholder')"
-        class="mt-1.5 w-full border-b border-black/15 bg-transparent pb-1.5 text-[15px] leading-6 tabular-nums text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
-        @input="onPrice"
-      >
-    </div>
+        :ui="PRICE_FIELD"
+      />
+    </UFormField>
 
-    <div>
-      <label class="block text-[11px] leading-4 text-black/30" for="review-queue">{{ t('reviewForm.queueLabel') }}</label>
-      <input
-        id="review-queue"
+    <UFormField :label="t('reviewForm.queueLabel')" :ui="FIELD_LABEL">
+      <UInput
         v-model="queue"
-        type="text"
         :maxlength="MAX_QUEUE"
         :placeholder="t('reviewForm.queuePlaceholder')"
-        class="mt-1.5 w-full border-b border-black/15 bg-transparent pb-1.5 text-[15px] leading-6 text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
-      >
-    </div>
+        :ui="LINE_FIELD"
+      />
+    </UFormField>
 
-    <div>
-      <label class="block text-[11px] leading-4 text-black/30" for="review-body">{{ t('reviewForm.bodyLabel') }}</label>
-      <textarea
-        id="review-body"
+    <UFormField :label="t('reviewForm.bodyLabel')" :ui="FIELD_LABEL">
+      <UTextarea
         v-model="body"
-        rows="4"
+        :rows="4"
         :maxlength="MAX_BODY"
         :placeholder="t('reviewForm.bodyPlaceholder')"
-        class="mt-1.5 w-full resize-none border-b border-black/15 bg-transparent pb-1.5 text-[15px] leading-6 text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
+        :ui="BODY_FIELD"
       />
-    </div>
+    </UFormField>
 
     <div class="flex items-center gap-4">
       <button

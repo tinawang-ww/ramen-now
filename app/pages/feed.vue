@@ -107,24 +107,26 @@ async function submit(payload: {
       </p>
     </header>
 
-    <div class="mt-8 flex items-center gap-3 border-b border-black/[0.07] pb-1.5">
-      <input
-        v-model="query"
-        type="search"
-        enterkeyhint="search"
-        :placeholder="t('common.searchShops')"
-        :aria-label="t('common.searchShops')"
-        class="min-w-0 flex-1 bg-transparent text-[15px] leading-6 text-black/90 outline-none placeholder:text-black/25 [&::-webkit-search-cancel-button]:hidden"
-      >
-      <button
-        v-if="searching"
-        type="button"
-        class="shrink-0 text-[12px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
-        @click="query = ''"
-      >
-        {{ t('common.clear') }}
-      </button>
-    </div>
+    <!-- The same UInput as the board's: rule on the root, clear on the trailing slot. -->
+    <UInput
+      v-model="query"
+      type="search"
+      enterkeyhint="search"
+      :placeholder="t('common.searchShops')"
+      :aria-label="t('common.searchShops')"
+      :ui="SEARCH_FIELD"
+    >
+      <template #trailing>
+        <button
+          v-if="searching"
+          type="button"
+          class="shrink-0 text-[12px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+          @click="query = ''"
+        >
+          {{ t('common.clear') }}
+        </button>
+      </template>
+    </UInput>
 
     <!-- Signed out you can still read everything; only writing needs an account. -->
     <div class="mt-8">

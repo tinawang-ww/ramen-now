@@ -46,6 +46,9 @@ const zh = {
   'seatCounts.counterMany': '個吧台座位',
   'seatCounts.tableOne': '個桌位座位',
   'seatCounts.tableMany': '個桌位座位',
+  'seatCounts.counterLabel': '吧台',
+  'seatCounts.tableLabel': '桌位',
+  'seatCounts.totalLabel': '總座位',
 
   'shopRow.noReport': '還沒有人回報',
   'shopRow.requestedDot': '有人要求回報',
@@ -166,6 +169,9 @@ const en = {
   'seatCounts.counterMany': 'counter seats',
   'seatCounts.tableOne': 'table seat',
   'seatCounts.tableMany': 'table seats',
+  'seatCounts.counterLabel': 'Counter',
+  'seatCounts.tableLabel': 'Table',
+  'seatCounts.totalLabel': 'Seats',
 
   'shopRow.noReport': 'No reports yet',
   'shopRow.requestedDot': 'Someone asked for a report',

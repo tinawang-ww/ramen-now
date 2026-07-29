@@ -1,5 +1,4 @@
 <script setup lang="ts">
-const route = useRoute()
 const { loggedIn, user } = useUserSession()
 const { t, toggleLocale } = useLocale()
 </script>
@@ -8,38 +7,45 @@ const { t, toggleLocale } = useLocale()
   <nav class="flex items-baseline justify-between gap-4">
     <!-- Weight alone marks the current surface: this app has no boxed UI anywhere. -->
     <div class="flex min-w-0 items-baseline gap-5">
-      <NuxtLink
+      <!--
+        `raw` keeps ULink's own theme out of it and leaves only what it's here
+        for: resolving the active route, which lands aria-current="page" too.
+        `exact` matters — without it "/" reads as active on every surface.
+      -->
+      <ULink
         v-for="surface in SURFACES"
         :key="surface.path"
+        raw
+        exact
         :to="surface.path"
-        :aria-current="route.path === surface.path ? 'page' : undefined"
         class="text-[13px] leading-5 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97]"
-        :class="route.path === surface.path
-          ? 'text-black/90'
-          : 'text-black/30 hover-fine:hover:text-black/60'"
+        active-class="text-black/90"
+        inactive-class="text-black/30 hover-fine:hover:text-black/60"
       >
         {{ t(surface.labelKey) }}
-      </NuxtLink>
+      </ULink>
     </div>
 
     <div class="flex shrink-0 items-baseline gap-4">
       <!-- Shows the language you'd switch to, not the one you're in. -->
-      <button
-        type="button"
+      <ULink
+        raw
+        as="button"
         :aria-label="t('nav.localeAria')"
         class="text-[11px] leading-4 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
         @click="toggleLocale()"
       >
         {{ t('nav.localeButton') }}
-      </button>
+      </ULink>
 
       <!-- Signing out lives on /me, not here. -->
-      <NuxtLink
+      <ULink
+        raw
         :to="loggedIn ? '/me' : '/login'"
         class="max-w-[7rem] truncate text-[11px] leading-4 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
       >
         {{ loggedIn ? user?.label : t('nav.signIn') }}
-      </NuxtLink>
+      </ULink>
     </div>
   </nav>
 </template>
