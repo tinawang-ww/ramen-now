@@ -3,6 +3,11 @@
 // main surface, so /login and /me need no exception here.
 const shell = useTemplateRef<HTMLElement>('shell')
 usePageSwipe(shell)
+
+const { locale } = useLocale()
+useHead({
+  htmlAttrs: { lang: () => (locale.value === 'zh' ? 'zh-Hant-TW' : 'en') },
+})
 </script>
 
 <template>

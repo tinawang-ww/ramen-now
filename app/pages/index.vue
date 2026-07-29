@@ -2,9 +2,12 @@
 import type { ShopSummary } from '~~/shared/types'
 import { distanceKm } from '~~/shared/geo'
 
+const { t } = useLocale()
+
+// Getters, not strings, so the tab title follows the language toggle too.
 useSeoMeta({
-  title: '拉麵Now · 拉麵排隊回報',
-  description: '大家一起回報拉麵店現在的排隊狀況，出門前先看一眼。',
+  title: () => t('board.seoTitle'),
+  description: () => t('board.seoDescription'),
 })
 
 // deep: true because reporting and requesting patch a row in place; Nuxt 4's
@@ -68,11 +71,11 @@ const statusLine = computed(() => {
   if (notice.value)
     return notice.value
   if (locationNudging.value)
-    return '還在等你允許使用位置…'
+    return t('board.locationNudge')
   if (locationMessage.value)
     return locationMessage.value
 
-  return '超過 90 分鐘的回報會變淡，代表不能當「現在」看。'
+  return t('board.hint')
 })
 
 let noticeTimer: ReturnType<typeof setTimeout> | undefined
@@ -106,7 +109,7 @@ async function report(shop: ShopSummary, people: number) {
   }
   catch {
     Object.assign(shop, previous)
-    flash('回報失敗，請再試一次')
+    flash(t('board.reportFailed'))
   }
 }
 
@@ -120,11 +123,11 @@ async function request(shop: ShopSummary) {
   try {
     const result = await $fetch(`/api/shops/${shop.id}/request`, { method: 'POST' })
     shop.requestedAt = result.requestedAt
-    flash('已標記這家需要回報')
+    flash(t('board.requestSent'))
   }
   catch {
     shop.requestedAt = previous
-    flash('要求失敗，請再試一次')
+    flash(t('board.requestFailed'))
   }
 }
 
@@ -167,10 +170,10 @@ async function addShop() {
     // Drop them straight into reporting for the shop they just added.
     openId.value = shop.id
     if (!shop.created)
-      flash('這家已經在清單上了')
+      flash(t('board.alreadyListed'))
   }
   catch {
-    flash('新增失敗，請再試一次')
+    flash(t('board.addFailed'))
   }
   finally {
     submitting.value = false
@@ -191,10 +194,10 @@ async function addShop() {
 
     <header class="mt-6">
       <h1 class="text-[22px] leading-7 tracking-tight text-black/90">
-        現在排幾人
+        {{ t('board.title') }}
       </h1>
       <p class="mt-1.5 text-[13px] leading-5 text-black/35">
-        路過的人回報，出門前先看一眼。
+        {{ t('board.tagline') }}
       </p>
     </header>
 
@@ -203,8 +206,8 @@ async function addShop() {
         v-model="query"
         type="search"
         enterkeyhint="search"
-        placeholder="搜尋店名"
-        aria-label="搜尋店名"
+        :placeholder="t('common.searchShops')"
+        :aria-label="t('common.searchShops')"
         class="min-w-0 flex-1 bg-transparent text-[15px] leading-6 text-black/90 outline-none placeholder:text-black/25 [&::-webkit-search-cancel-button]:hidden"
       >
       <button
@@ -213,7 +216,7 @@ async function addShop() {
         class="shrink-0 text-[12px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
         @click="query = ''"
       >
-        清除
+        {{ t('common.clear') }}
       </button>
     </div>
 
@@ -226,10 +229,10 @@ async function addShop() {
         class="text-black/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-black/80"
         @click="locate()"
       >
-        {{ locationStatus === 'locating' ? '定位中…' : '⌖ 找我附近的' }}
+        {{ locationStatus === 'locating' ? t('board.locating') : t('board.findNearby') }}
       </button>
 
-      <span v-else class="text-black/40">由近到遠排序</span>
+      <span v-else class="text-black/40">{{ t('board.sortedByDistance') }}</span>
     </div>
 
     <ul v-if="rows.length" class="mt-8 border-t border-black/[0.07]">
@@ -249,7 +252,7 @@ async function addShop() {
     </ul>
 
     <p v-if="!rows.length" class="mt-12 text-[13px] leading-5 text-black/35">
-      {{ searching ? `找不到「${query.trim()}」，換個關鍵字或新增這家。` : '還沒有店家，先加第一家。' }}
+      {{ searching ? t('board.emptySearch', { query: query.trim() }) : t('board.empty') }}
     </p>
 
     <div class="mt-8">
@@ -259,7 +262,7 @@ async function addShop() {
         class="text-[13px] leading-5 text-black/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/80"
         @click="startAdd()"
       >
-        ＋ 新增店家
+        {{ t('board.addShop') }}
       </button>
 
       <form v-else class="flex items-center gap-3" @submit.prevent="addShop">
@@ -268,7 +271,7 @@ async function addShop() {
           v-model="draftName"
           type="text"
           maxlength="40"
-          placeholder="店名"
+          :placeholder="t('board.shopNamePlaceholder')"
           class="min-w-0 flex-1 border-b border-black/15 pb-1.5 text-[15px] leading-6 text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
           @keydown.esc="cancelAdd"
         >
@@ -277,14 +280,14 @@ async function addShop() {
           :disabled="!draftName.trim() || submitting"
           class="shrink-0 text-[13px] leading-5 text-black/80 transition-[opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25"
         >
-          加入
+          {{ t('board.add') }}
         </button>
         <button
           type="button"
           class="shrink-0 text-[13px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
           @click="cancelAdd"
         >
-          取消
+          {{ t('common.cancel') }}
         </button>
       </form>
     </div>

@@ -6,7 +6,9 @@ const props = defineProps<{
   now: number
 }>()
 
-const meta = computed(() => `${props.review.author} · ${formatAgo(props.review.createdAt, props.now)}`)
+const { locale, t } = useLocale()
+
+const meta = computed(() => `${props.review.author} · ${formatAgo(props.review.createdAt, props.now, locale.value)}`)
 </script>
 
 <template>
@@ -27,7 +29,7 @@ const meta = computed(() => `${props.review.author} · ${formatAgo(props.review.
     </p>
 
     <p class="mt-3 text-[12px] leading-4 text-black/35">
-      排隊：{{ review.queue }}
+      {{ t('reviewCard.queuePrefix') + review.queue }}
     </p>
 
     <p class="mt-1 text-[12px] leading-4 tabular-nums text-black/35">

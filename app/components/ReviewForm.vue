@@ -9,6 +9,8 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
+const { t } = useLocale()
+
 /** Enough to recognise the one you mean without turning into a directory. */
 const SUGGESTION_LIMIT = 6
 
@@ -114,7 +116,7 @@ function submit() {
 <template>
   <form class="space-y-6" @submit.prevent="submit">
     <div>
-      <label class="block text-[11px] leading-4 text-black/30" for="review-shop">店家</label>
+      <label class="block text-[11px] leading-4 text-black/30" for="review-shop">{{ t('reviewForm.shopLabel') }}</label>
       <input
         id="review-shop"
         ref="shopInput"
@@ -122,7 +124,7 @@ function submit() {
         type="text"
         maxlength="40"
         autocomplete="off"
-        placeholder="搜尋或新增店名"
+        :placeholder="t('reviewForm.shopPlaceholder')"
         class="mt-1.5 w-full border-b border-black/15 bg-transparent pb-1.5 text-[15px] leading-6 text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
       >
 
@@ -145,56 +147,56 @@ function submit() {
         class="mt-2 text-[13px] leading-5 text-black/50 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-black/90"
         @click="addShop()"
       >
-        {{ addingShop ? '新增中…' : `＋ 新增「${shopQuery.trim()}」` }}
+        {{ addingShop ? t('reviewForm.addingShop') : t('reviewForm.addShopNamed', { name: shopQuery.trim() }) }}
       </button>
     </div>
 
     <div>
-      <label class="block text-[11px] leading-4 text-black/30" for="review-ramen">拉麵名稱</label>
+      <label class="block text-[11px] leading-4 text-black/30" for="review-ramen">{{ t('reviewForm.ramenLabel') }}</label>
       <input
         id="review-ramen"
         v-model="ramen"
         type="text"
         :maxlength="MAX_RAMEN"
-        placeholder="特製濃厚豚骨"
+        :placeholder="t('reviewForm.ramenPlaceholder')"
         class="mt-1.5 w-full border-b border-black/15 bg-transparent pb-1.5 text-[15px] leading-6 text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
       >
     </div>
 
     <div>
-      <label class="block text-[11px] leading-4 text-black/30" for="review-price">價格</label>
+      <label class="block text-[11px] leading-4 text-black/30" for="review-price">{{ t('reviewForm.priceLabel') }}</label>
       <input
         id="review-price"
         :value="price"
         type="text"
         inputmode="numeric"
         maxlength="4"
-        placeholder="320"
+        :placeholder="t('reviewForm.pricePlaceholder')"
         class="mt-1.5 w-full border-b border-black/15 bg-transparent pb-1.5 text-[15px] leading-6 tabular-nums text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
         @input="onPrice"
       >
     </div>
 
     <div>
-      <label class="block text-[11px] leading-4 text-black/30" for="review-queue">排隊情形</label>
+      <label class="block text-[11px] leading-4 text-black/30" for="review-queue">{{ t('reviewForm.queueLabel') }}</label>
       <input
         id="review-queue"
         v-model="queue"
         type="text"
         :maxlength="MAX_QUEUE"
-        placeholder="排了 20 分鐘"
+        :placeholder="t('reviewForm.queuePlaceholder')"
         class="mt-1.5 w-full border-b border-black/15 bg-transparent pb-1.5 text-[15px] leading-6 text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
       >
     </div>
 
     <div>
-      <label class="block text-[11px] leading-4 text-black/30" for="review-body">心得</label>
+      <label class="block text-[11px] leading-4 text-black/30" for="review-body">{{ t('reviewForm.bodyLabel') }}</label>
       <textarea
         id="review-body"
         v-model="body"
         rows="4"
         :maxlength="MAX_BODY"
-        placeholder="湯頭、麵條、配料，還有下次會不會再去。"
+        :placeholder="t('reviewForm.bodyPlaceholder')"
         class="mt-1.5 w-full resize-none border-b border-black/15 bg-transparent pb-1.5 text-[15px] leading-6 text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
       />
     </div>
@@ -205,7 +207,7 @@ function submit() {
         :disabled="!ready || submitting"
         class="rounded-full bg-black px-5 py-2.5 text-[13px] leading-4 text-white transition-[opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25"
       >
-        {{ submitting ? '送出中…' : '送出' }}
+        {{ submitting ? t('reviewForm.submitting') : t('reviewForm.submit') }}
       </button>
 
       <button
@@ -213,7 +215,7 @@ function submit() {
         class="text-[13px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
         @click="emit('cancel')"
       >
-        取消
+        {{ t('common.cancel') }}
       </button>
     </div>
   </form>

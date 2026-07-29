@@ -17,6 +17,8 @@ const emit = defineEmits<{
   request: []
 }>()
 
+const { locale, t } = useLocale()
+
 /** A report from three hours ago says nothing about the queue right now. */
 const fresh = computed(() =>
   props.shop.reportedAt !== null && props.now - props.shop.reportedAt < FRESH_WINDOW_MS,
@@ -26,11 +28,11 @@ const meta = computed(() => {
   const parts = []
 
   if (props.distance !== null && props.distance !== undefined)
-    parts.push(formatDistance(props.distance))
+    parts.push(formatDistance(props.distance, locale.value))
 
   parts.push(props.shop.reportedAt === null
-    ? '還沒有人回報'
-    : formatAgo(props.shop.reportedAt, props.now))
+    ? t('shopRow.noReport')
+    : formatAgo(props.shop.reportedAt, props.now, locale.value))
 
   return parts.join(' · ')
 })
@@ -90,7 +92,7 @@ function onInput(event: Event) {
           >
             <span v-if="requested" class="shrink-0">
               <span class="block size-[6px] animate-pulse-dot rounded-full bg-black/70" />
-              <span class="sr-only">有人要求回報</span>
+              <span class="sr-only">{{ t('shopRow.requestedDot') }}</span>
             </span>
           </Transition>
 
@@ -121,7 +123,7 @@ function onInput(event: Event) {
               type="button"
               :disabled="draft === 0"
               class="size-9 rounded-full border border-black/[0.09] text-[15px] leading-none text-black/70 transition-[transform,border-color,opacity] duration-150 ease-out-strong active:scale-[0.94] disabled:opacity-25 hover-fine:hover:border-black/25"
-              aria-label="減少一人"
+              :aria-label="t('shopRow.minusAria')"
               @click="step(-1)"
             >
               −
@@ -132,7 +134,7 @@ function onInput(event: Event) {
               type="text"
               inputmode="numeric"
               maxlength="2"
-              aria-label="目前排隊人數"
+              :aria-label="t('shopRow.countAria')"
               class="w-11 rounded-lg border border-transparent py-1 text-center text-[17px] leading-6 tabular-nums text-black/90 outline-none transition-colors duration-200 focus:border-black/15"
               @input="onInput"
             >
@@ -141,21 +143,21 @@ function onInput(event: Event) {
               type="button"
               :disabled="draft >= MAX_PEOPLE"
               class="size-9 rounded-full border border-black/[0.09] text-[15px] leading-none text-black/70 transition-[transform,border-color,opacity] duration-150 ease-out-strong active:scale-[0.94] disabled:opacity-25 hover-fine:hover:border-black/25"
-              aria-label="增加一人"
+              :aria-label="t('shopRow.plusAria')"
               @click="step(1)"
             >
               ＋
             </button>
           </div>
 
-          <span class="text-[12px] leading-4 text-black/30">人在排</span>
+          <span class="text-[12px] leading-4 text-black/30">{{ t('shopRow.inLine') }}</span>
 
           <button
             type="button"
             class="ml-auto rounded-full bg-black px-5 py-2.5 text-[13px] leading-4 text-white transition-transform duration-150 ease-out-strong active:scale-[0.97]"
             @click="emit('report', draft)"
           >
-            回報
+            {{ t('shopRow.report') }}
           </button>
         </div>
 
@@ -166,7 +168,7 @@ function onInput(event: Event) {
           class="mt-1 text-[12px] leading-4 text-black/35 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:text-black/25 hover-fine:hover:text-black/70 hover-fine:disabled:hover:text-black/25"
           @click="emit('request')"
         >
-          {{ requested ? '已經有人要求回報' : '不在現場？要求回報' }}
+          {{ requested ? t('shopRow.alreadyRequested') : t('shopRow.requestReport') }}
         </button>
       </div>
     </div>

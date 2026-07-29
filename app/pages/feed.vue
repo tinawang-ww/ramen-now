@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import type { ReviewSummary } from '~~/shared/types'
 
+const { t } = useLocale()
+
+// Getters, not strings, so the tab title follows the language toggle too.
 useSeoMeta({
-  title: '食記 · 拉麵Now',
-  description: '大家吃過的拉麵：點了什麼、多少錢、當時排隊排多久。',
+  title: () => t('feed.seoTitle'),
+  description: () => t('feed.seoDescription'),
 })
 
 const route = useRoute()
@@ -41,7 +44,7 @@ const { loggedIn } = useUserSession()
 const notice = ref('')
 
 /** Same bottom line as the other pages: hint by default, feedback when there is any. */
-const statusLine = computed(() => notice.value || '看板說現在排幾人，食記說值不值得去排。')
+const statusLine = computed(() => notice.value || t('feed.hint'))
 
 let noticeTimer: ReturnType<typeof setTimeout> | undefined
 function flash(message: string) {
@@ -68,7 +71,7 @@ async function submit(payload: {
     const review = await $fetch('/api/reviews', { method: 'POST', body: payload })
     reviews.value = [review, ...reviews.value]
     writing.value = false
-    flash('已記下這一碗')
+    flash(t('feed.saved'))
   }
   catch (error) {
     // Read the body, not error.statusMessage: h3 strips non-ASCII from the HTTP
@@ -76,7 +79,7 @@ async function submit(payload: {
     // surfacing here — "價格請填 1–9999 元" beats a generic failure on a
     // five-field form. The form stays open with everything still in it.
     const data = (error as { data?: { statusMessage?: string, message?: string } })?.data
-    flash(data?.statusMessage || data?.message || '送出失敗，請再試一次')
+    flash(data?.statusMessage || data?.message || t('feed.submitFailed'))
   }
   finally {
     submitting.value = false
@@ -97,10 +100,10 @@ async function submit(payload: {
 
     <header class="mt-6">
       <h1 class="text-[22px] leading-7 tracking-tight text-black/90">
-        食記
+        {{ t('feed.title') }}
       </h1>
       <p class="mt-1.5 text-[13px] leading-5 text-black/35">
-        吃過的人寫下來，下次挑店有東西可以看。
+        {{ t('feed.tagline') }}
       </p>
     </header>
 
@@ -109,8 +112,8 @@ async function submit(payload: {
         v-model="query"
         type="search"
         enterkeyhint="search"
-        placeholder="搜尋店名"
-        aria-label="搜尋店名"
+        :placeholder="t('common.searchShops')"
+        :aria-label="t('common.searchShops')"
         class="min-w-0 flex-1 bg-transparent text-[15px] leading-6 text-black/90 outline-none placeholder:text-black/25 [&::-webkit-search-cancel-button]:hidden"
       >
       <button
@@ -119,7 +122,7 @@ async function submit(payload: {
         class="shrink-0 text-[12px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
         @click="query = ''"
       >
-        清除
+        {{ t('common.clear') }}
       </button>
     </div>
 
@@ -130,7 +133,7 @@ async function submit(payload: {
         to="/login"
         class="text-[13px] leading-5 text-black/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/80"
       >
-        登入後可以寫食記
+        {{ t('feed.signInToWrite') }}
       </NuxtLink>
 
       <button
@@ -139,7 +142,7 @@ async function submit(payload: {
         class="text-[13px] leading-5 text-black/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/80"
         @click="writing = true"
       >
-        ＋ 寫食記
+        {{ t('feed.write') }}
       </button>
 
       <ReviewForm
@@ -162,7 +165,7 @@ async function submit(payload: {
     </ul>
 
     <p v-else class="mt-12 text-[13px] leading-5 text-black/35">
-      {{ searching ? `找不到「${query.trim()}」的食記。` : '還沒有人寫食記，吃完的時候寫一下。' }}
+      {{ searching ? t('feed.emptySearch', { query: query.trim() }) : t('feed.empty') }}
     </p>
 
     <p

@@ -21,9 +21,11 @@ export function distanceKm(from: Coords, to: Coords) {
 }
 
 /** Under a km reads in metres, and never with false precision. */
-export function formatDistance(km: number) {
+// Locale is a plain union here, not the app's Locale type: shared/ is also
+// loaded by the server, which has no business importing app/i18n.
+export function formatDistance(km: number, locale: 'zh' | 'en' = 'zh') {
   if (km < 0.1)
-    return '就在附近'
+    return locale === 'en' ? 'right nearby' : '就在附近'
   if (km < 1)
     return `${Math.round(km * 100) * 10} m`
   if (km < 10)

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const { loggedIn, user } = useUserSession()
+const { t, toggleLocale } = useLocale()
 </script>
 
 <template>
@@ -17,16 +18,28 @@ const { loggedIn, user } = useUserSession()
           ? 'text-black/90'
           : 'text-black/30 hover-fine:hover:text-black/60'"
       >
-        {{ surface.label }}
+        {{ t(surface.labelKey) }}
       </NuxtLink>
     </div>
 
-    <!-- One tappable thing only — signing out lives on /me, not here. -->
-    <NuxtLink
-      :to="loggedIn ? '/me' : '/login'"
-      class="max-w-[7rem] shrink-0 truncate text-[11px] leading-4 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
-    >
-      {{ loggedIn ? user?.label : '登入' }}
-    </NuxtLink>
+    <div class="flex shrink-0 items-baseline gap-4">
+      <!-- Shows the language you'd switch to, not the one you're in. -->
+      <button
+        type="button"
+        :aria-label="t('nav.localeAria')"
+        class="text-[11px] leading-4 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+        @click="toggleLocale()"
+      >
+        {{ t('nav.localeButton') }}
+      </button>
+
+      <!-- Signing out lives on /me, not here. -->
+      <NuxtLink
+        :to="loggedIn ? '/me' : '/login'"
+        class="max-w-[7rem] truncate text-[11px] leading-4 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+      >
+        {{ loggedIn ? user?.label : t('nav.signIn') }}
+      </NuxtLink>
+    </div>
   </nav>
 </template>

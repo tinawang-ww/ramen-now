@@ -1,4 +1,5 @@
 import type { Coords } from '~~/shared/geo'
+import type { MessageKey } from '~/i18n/messages'
 
 export type LocationStatus = 'unsupported' | 'idle' | 'locating' | 'ready' | 'error'
 
@@ -15,10 +16,12 @@ const PERMISSION_DENIED = 1
 const POSITION_UNAVAILABLE = 2
 const TIMEOUT = 3
 
-const MESSAGES: Record<number, string> = {
-  [PERMISSION_DENIED]: '你關閉了定位權限，清單改回依回報時間排序。',
-  [POSITION_UNAVAILABLE]: '拿不到你的位置，請確認定位服務已開啟。',
-  [TIMEOUT]: '定位等太久了，再試一次看看。',
+// Keys, not strings: the message is translated where it's read, so it follows
+// the language toggle even while already on screen.
+const MESSAGES: Record<number, MessageKey> = {
+  [PERMISSION_DENIED]: 'location.denied',
+  [POSITION_UNAVAILABLE]: 'location.unavailable',
+  [TIMEOUT]: 'location.timeout',
 }
 
 /**
@@ -33,9 +36,12 @@ export function useUserLocation() {
   // either way would desync the markup it sent.
   const supported = ref(false)
 
+  const { t } = useLocale()
+
   const coords = ref<Coords | null>(null)
   const status = ref<LocationStatus>('unsupported')
-  const message = ref('')
+  const messageKey = ref<MessageKey | null>(null)
+  const message = computed(() => (messageKey.value ? t(messageKey.value) : ''))
   const nudging = ref(false)
 
   /** Set once we know the user already said no, so we stop offering the button. */
@@ -55,13 +61,13 @@ export function useUserLocation() {
       lng: position.coords.longitude,
     }
     status.value = 'ready'
-    message.value = ''
+    messageKey.value = null
   }
 
   function reject(error: GeolocationPositionError) {
     stopNudge()
     status.value = 'error'
-    message.value = MESSAGES[error.code] ?? '定位失敗，清單改回依回報時間排序。'
+    messageKey.value = MESSAGES[error.code] ?? 'location.failed'
     denied.value = error.code === PERMISSION_DENIED
   }
 
@@ -71,7 +77,7 @@ export function useUserLocation() {
       return
 
     status.value = 'locating'
-    message.value = ''
+    messageKey.value = null
 
     nudgeTimer = setTimeout(() => (nudging.value = true), NUDGE_AFTER_MS)
 
@@ -86,7 +92,7 @@ export function useUserLocation() {
     stopNudge()
     coords.value = null
     status.value = supported.value ? 'idle' : 'unsupported'
-    message.value = ''
+    messageKey.value = null
   }
 
   onMounted(async () => {
