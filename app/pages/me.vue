@@ -79,7 +79,8 @@ async function addPasskey() {
 </script>
 
 <template>
-  <main class="mx-auto min-h-[100dvh] w-full max-w-[30rem] px-6 pb-24 pt-20">
+  <!-- The right edge is wider on phones, where the scroll indicator rides over it. -->
+  <main class="mx-auto min-h-[100dvh] w-full max-w-[30rem] pb-24 pl-6 pr-8 pt-20 sm:pr-6">
     <header>
       <h1 class="text-[22px] leading-7 tracking-tight text-black/90">
         你的回報
