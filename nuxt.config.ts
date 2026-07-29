@@ -9,6 +9,11 @@ export default defineNuxtConfig({
     head: {
       htmlAttrs: { lang: 'zh-Hant-TW' },
       meta: [{ name: 'theme-color', content: '#fffdf9' }],
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+        { rel: 'manifest', href: '/manifest.webmanifest' },
+      ],
     },
   },
   colorMode: { preference: 'light', fallback: 'light' },

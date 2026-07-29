@@ -15,6 +15,7 @@ const emit = defineEmits<{
   toggle: []
   report: [people: number]
   request: []
+  share: []
 }>()
 
 const { locale, t } = useLocale()
@@ -41,6 +42,9 @@ const meta = computed(() => {
 const requested = computed(() =>
   isRequestPending(props.shop.requestedAt, props.shop.reportedAt, props.now),
 )
+
+/** The best news on the board — worth its own chip, not a number you must parse. */
+const noLine = computed(() => fresh.value && props.shop.people === 0)
 
 // The 0fr → 1fr grid trick collapses to 0px once the child clips its overflow,
 // so the panel is measured on open instead.
@@ -98,8 +102,13 @@ function onInput(event: Event) {
 
           <span class="truncate">{{ shop.name }}</span>
         </span>
-        <span class="mt-1 block text-[12px] leading-4 tabular-nums text-mist">
-          {{ meta }}
+        <span class="mt-1 flex items-center gap-2">
+          <span v-if="noLine" class="rounded-full bg-matcha/35 px-2 text-[10px] leading-4 text-ink/70">
+            {{ t('shopRow.noLine') }}
+          </span>
+          <span class="block text-[12px] leading-4 tabular-nums text-mist">
+            {{ meta }}
+          </span>
         </span>
       </span>
 
@@ -179,6 +188,15 @@ function onInput(event: Event) {
           >
             {{ t('shopRow.readReviews') }}
           </NuxtLink>
+
+          <!-- Every share is a personal invite — this is how the board grows. -->
+          <button
+            type="button"
+            class="text-[12px] leading-4 text-ink/35 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-accent"
+            @click="emit('share')"
+          >
+            {{ t('shopRow.share') }}
+          </button>
         </div>
       </div>
     </div>
