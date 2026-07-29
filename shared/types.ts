@@ -11,3 +11,21 @@ export interface ShopSummary {
   /** Newest report request's timestamp in ms, or null when nobody has asked. */
   requestedAt: number | null
 }
+
+export interface ReviewSummary {
+  id: number
+  shopId: number
+  shopName: string
+  ramen: string
+  /** TWD, whole dollars. */
+  price: number
+  /** Free text — what the queue was like when they went, not a head count. */
+  queue: string
+  body: string
+  /** Always null for now; the upload stage is what fills it. */
+  photoUrl: string | null
+  /** The author's passkey-picker label. There is no anonymous write-up. */
+  author: string
+  /** Timestamp in ms. */
+  createdAt: number
+}
