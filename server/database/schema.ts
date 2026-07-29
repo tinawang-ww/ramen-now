@@ -61,7 +61,36 @@ export const reports = sqliteTable('reports', {
   index('reports_user_idx').on(table.userId),
 ])
 
+export const reviews = sqliteTable('reviews', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  shopId: integer('shop_id')
+    .notNull()
+    .references(() => shops.id, { onDelete: 'cascade' }),
+  /**
+   * Writing one requires signing in, so unlike a report this always has an
+   * author — hence notNull, and hence cascade: `set null` isn't legal here.
+   */
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  ramen: text('ramen').notNull(),
+  /** TWD, whole dollars. Nobody records a bowl of ramen down to the cent. */
+  price: integer('price').notNull(),
+  /** Free text: 「排了 20 分鐘」and 「假日中午別來」are both the right answer. */
+  queue: text('queue').notNull(),
+  body: text('body').notNull(),
+  /** Reserved for the upload stage. Nothing writes it yet. */
+  photoUrl: text('photo_url'),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+}, table => [
+  index('reviews_shop_created_idx').on(table.shopId, table.createdAt),
+  index('reviews_created_idx').on(table.createdAt),
+])
+
 export type Shop = typeof shops.$inferSelect
 export type Report = typeof reports.$inferSelect
+export type Review = typeof reviews.$inferSelect
 export type User = typeof users.$inferSelect
 export type Credential = typeof credentials.$inferSelect
