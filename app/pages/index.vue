@@ -7,8 +7,6 @@ useSeoMeta({
   description: '大家一起回報拉麵店現在的排隊狀況，出門前先看一眼。',
 })
 
-const { loggedIn, user } = useUserSession()
-
 // deep: true because reporting and requesting patch a row in place; Nuxt 4's
 // shallow default would keep the list rendering the pre-tap values.
 const { data: shops, refresh } = await useFetch('/api/shops', {
@@ -182,23 +180,15 @@ async function addShop() {
 
 <template>
   <main class="mx-auto min-h-[100dvh] w-full max-w-[30rem] px-6 pb-24 pt-20">
-    <header class="flex items-baseline justify-between gap-4">
-      <div class="min-w-0">
-        <h1 class="text-[22px] leading-7 tracking-tight text-black/90">
-          現在排幾人
-        </h1>
-        <p class="mt-1.5 text-[13px] leading-5 text-black/35">
-          路過的人回報，出門前先看一眼。
-        </p>
-      </div>
+    <SiteNav />
 
-      <!-- One tappable thing only — signing out lives on /me, not here. -->
-      <NuxtLink
-        :to="loggedIn ? '/me' : '/login'"
-        class="max-w-[7rem] shrink-0 truncate text-[11px] leading-4 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
-      >
-        {{ loggedIn ? user?.label : '登入' }}
-      </NuxtLink>
+    <header class="mt-6">
+      <h1 class="text-[22px] leading-7 tracking-tight text-black/90">
+        現在排幾人
+      </h1>
+      <p class="mt-1.5 text-[13px] leading-5 text-black/35">
+        路過的人回報，出門前先看一眼。
+      </p>
     </header>
 
     <div class="mt-8 flex items-center gap-3 border-b border-black/[0.07] pb-1.5">

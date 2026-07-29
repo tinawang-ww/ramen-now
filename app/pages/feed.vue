@@ -23,7 +23,9 @@ const statusLine = computed(() => notice.value || '看板說現在排幾人，�
 
 <template>
   <main class="mx-auto min-h-[100dvh] w-full max-w-[30rem] px-6 pb-24 pt-20">
-    <header>
+    <SiteNav />
+
+    <header class="mt-6">
       <h1 class="text-[22px] leading-7 tracking-tight text-black/90">
         食記
       </h1>
