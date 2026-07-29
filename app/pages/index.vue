@@ -88,14 +88,26 @@ const rows = computed(() => {
         : null,
     }))
 
-  // 如果尚未取得位置，就不顯示
-  if (from === null) {
-    return []
+  let filteredList = list
+  if (!keyword) {
+    // 搜尋欄為空時：如果有位置，只顯示 500m 內的；如果沒有位置，就不顯示
+    if (from === null) {
+      filteredList = []
+    } else {
+      filteredList = list.filter(row => row.distance !== null && row.distance <= 0.5)
+    }
   }
 
-  return list.sort((a, b) => {
+  // 排序：如果有提供位置，依照距離近到遠排序
+  if (from === null) {
+    return filteredList
+  }
+
+  return filteredList.sort((a, b) => {
     // Both known: plain ascending kilometres.
-    return a.distance! - b.distance!
+    if (a.distance === null || b.distance === null)
+      return Number(a.distance === null) - Number(b.distance === null)
+    return a.distance - b.distance
   })
 })
 
@@ -143,14 +155,32 @@ function flash(message: string) {
   noticeTimer = setTimeout(() => (notice.value = ''), 4000)
 }
 
+// We now track which shops are visible on screen to poll only those.
+const visibleShopIds = new Set<number>()
+
 // Refresh quietly in the background — but never while a row is open, so the
 // list can't reorder under someone's thumb mid-tap.
 // Background tabs are skipped too: nobody is reading them, and the poll would
 // keep the tab awake for nothing.
 const visibility = useDocumentVisibility()
-useIntervalFn(() => {
-  if (visibility.value === 'visible' && openId.value === null)
-    refresh()
+useIntervalFn(async () => {
+  if (visibility.value === 'visible' && openId.value === null && visibleShopIds.size > 0) {
+    try {
+      const ids = Array.from(visibleShopIds).join(',')
+      const reports = await $fetch<any[]>(`/api/shops/reports?ids=${ids}`)
+      
+      for (const report of reports) {
+        const shop = shops.value.find(s => s.id === report.id)
+        if (shop) {
+          shop.people = report.people
+          shop.reportedAt = report.reportedAt
+          shop.requestedAt = report.requestedAt
+        }
+      }
+    } catch (e) {
+      // Polling failure is silent. It'll try again in a minute.
+    }
+  }
 }, 60_000)
 
 /**
@@ -252,63 +282,7 @@ async function request(shop: ShopSummary) {
   }
 }
 
-// The "add a shop" form at the foot of the list.
-const adding = ref(false) // false shows the link, true swaps in the form
-const draftName = ref('') // the name being typed
-const submitting = ref(false) // guards against a double submit
 
-/** Searching for a shop that isn't listed is the usual way people end up here. */
-function startAdd() {
-  // So prefill from the search box — but never over something already typed,
-  // which would throw away the user's own text if they reopened the form.
-  if (!draftName.value)
-    draftName.value = query.value.trim()
-  adding.value = true
-}
-
-/** Close the form and forget the draft, from Cancel or from Esc. */
-function cancelAdd() {
-  adding.value = false
-  draftName.value = ''
-}
-
-/** Create the shop, then leave the user pointed at reporting its queue. */
-async function addShop() {
-  const name = draftName.value.trim()
-  // Nothing to submit, or a submit is already in flight. The button is disabled
-  // in both cases; this also covers the Enter key, which ignores that.
-  if (!name || submitting.value)
-    return
-
-  submitting.value = true
-  try {
-    const shop = await $fetch('/api/shops', { method: 'POST', body: { name } })
-    cancelAdd()
-    // Clear the filter, or the shop they just added could be hidden by it.
-    query.value = ''
-    // Pull the list again so the new row exists before we try to open it.
-    await refresh()
-    // Drop them straight into reporting for the shop they just added.
-    openId.value = shop.id
-    // The endpoint is idempotent on name: created === false means it matched a
-    // shop already on the board, and the row that just opened is that one.
-    if (!shop.created)
-      flash(t('board.alreadyListed'))
-  }
-  catch {
-    flash(t('board.addFailed'))
-  }
-  finally {
-    // Runs on both paths, so a failure can be retried.
-    submitting.value = false
-  }
-}
-
-/** Same rule as ReviewForm's fields, but sharing a flex row with two buttons. */
-const NAME_FIELD = {
-  ...LINE_FIELD,
-  root: () => 'relative flex min-w-0 flex-1 items-center',
-}
 </script>
 
 <template>
@@ -323,7 +297,8 @@ const NAME_FIELD = {
     <SiteNav />
 
     <!-- Title and one-line description of what the board is. -->
-    <header class="mt-6">
+    <header class="mt-6 flex flex-col items-center text-center">
+      <img :src="'/stamps/default.png'" alt="Queue icon" class="mb-3 size-12" />
       <h1 class="text-[22px] leading-7 tracking-tight text-ink/90">
         {{ t('board.title') }}
       </h1>
@@ -369,25 +344,33 @@ const NAME_FIELD = {
       The whole block is absent where geolocation can't run, including during
       SSR, so nothing offers a fix the browser would refuse.
     -->
-    <div v-if="locationSupported" class="mt-5 text-[13px] leading-5">
-      <!--
-        Before we have a position: the button that triggers the prompt. Disabled
-        while a fix is in flight, and permanently once the user has said no —
-        a second tap wouldn't re-prompt, it would silently fail. The status line
-        at the foot of the page is what explains the disabled state.
-      -->
-      <button
-        v-if="!sortedByDistance"
-        type="button"
-        :disabled="locationStatus === 'locating' || locationDenied"
-        class="text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-ink/80"
-        @click="locate()"
-      >
-        {{ locationStatus === 'locating' ? t('board.locating') : t('board.findNearby') }}
-      </button>
+    <!-- "How to help" / "Find nearby" -->
+    <!-- This replaces the plus button. The primary call to action is now locating oneself. -->
+    <div class="mt-5 flex items-baseline justify-between text-[13px] leading-5">
+      <!-- Left side: Hint for reporting -->
+      <span class="text-ink/40">{{ t('board.clickEmptyBowl') }}</span>
 
-      <!-- Once located there is nothing left to ask for, so the button becomes a label. -->
-      <span v-else class="text-ink/40">{{ t('board.sortedByDistance') }}</span>
+      <!-- Right side: Location sorting -->
+      <div v-if="locationSupported" class="text-right">
+        <!--
+          Before we have a position: the button that triggers the prompt. Disabled
+          while a fix is in flight, and permanently once the user has said no —
+          a second tap wouldn't re-prompt, it would silently fail. The status line
+          at the foot of the page is what explains the disabled state.
+        -->
+        <button
+          v-if="!sortedByDistance"
+          type="button"
+          :disabled="locationStatus === 'locating' || locationDenied"
+          class="text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-ink/80"
+          @click="locate()"
+        >
+          {{ locationStatus === 'locating' ? t('board.locating') : t('board.findNearby') }}
+        </button>
+
+        <!-- Once located there is nothing left to ask for, so the button becomes a label. -->
+        <span v-else class="text-ink/40">{{ t('board.sortedByDistance') }}</span>
+      </div>
     </div>
 
     <!-- The board itself. -->
@@ -406,6 +389,7 @@ const NAME_FIELD = {
         @report="report(row.shop, $event)"
         @request="request(row.shop)"
         @share="share(row.shop)"
+        @visible="(shopId, isVisible) => isVisible ? visibleShopIds.add(shopId) : visibleShopIds.delete(shopId)"
       />
       <!--
         Keyed by shop id, not by index, so a re-sort moves rows instead of
@@ -434,42 +418,7 @@ const NAME_FIELD = {
       without moving focus, which is how a failed report gets reported at all.
       It darkens when it has something to say and fades back for the resting hint.
     -->
-    <div class="mt-8">
-      <button
-        v-if="!adding"
-        type="button"
-        class="text-[13px] leading-5 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/80"
-        @click="startAdd()"
-      >
-        {{ t('board.addShop') }}
-      </button>
 
-      <form v-else class="flex items-center gap-3" @submit.prevent="addShop">
-        <input
-          ref="nameInput"
-          v-model="draftName"
-          type="text"
-          maxlength="40"
-          :placeholder="t('board.shopNamePlaceholder')"
-          class="min-w-0 flex-1 border-b border-ink/15 pb-1.5 text-[15px] leading-6 text-ink/90 outline-none transition-colors duration-200 placeholder:text-ink/25 focus:border-ink/60"
-          @keydown.esc="cancelAdd"
-        >
-        <button
-          type="submit"
-          :disabled="!draftName.trim() || submitting"
-          class="shrink-0 text-[13px] leading-5 text-ink/80 transition-[opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25"
-        >
-          {{ t('board.add') }}
-        </button>
-        <button
-          type="button"
-          class="shrink-0 text-[13px] leading-5 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
-          @click="cancelAdd"
-        >
-          {{ t('common.cancel') }}
-        </button>
-      </form>
-    </div>
 
     <p
       class="mt-6 text-[11px] leading-4 transition-colors duration-200"
