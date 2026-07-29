@@ -1,3 +1,8 @@
+/**
+ * @deprecated 
+ * 此 API 目前沒有被前端呼叫，因為「新增店家」功能已經從 UI 中移除。
+ * 保留此檔案供未來可能的需求或其他服務使用。
+ */
 import { eq, sql } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {

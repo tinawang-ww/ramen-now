@@ -22,47 +22,6 @@ const price = ref<number | undefined>()
 const queue = ref('')
 const body = ref('')
 
-const addingShop = ref(false)
-
-/**
- * Nothing matched what they typed, so put the shop on the board rather than
- * dead-end. Reuses the board's dedupe, so a shop typed twice stays one shop —
- * which is why the reply is looked up in the list before being appended.
- */
-async function addShop(name: string) {
-  const tidy = name.trim()
-
-  if (!tidy || addingShop.value)
-    return
-
-  addingShop.value = true
-  try {
-    const created = await $fetch('/api/shops', { method: 'POST', body: { name: tidy } })
-    const known = shops.value.find(candidate => candidate.id === created.id)
-
-    if (known) {
-      shop.value = known
-      return
-    }
-
-    const added: ShopSummary = {
-      id: created.id,
-      name: created.name,
-      lat: null,
-      lng: null,
-      counterSeats: null,
-      tableSeats: null,
-      people: null,
-      reportedAt: null,
-      requestedAt: null,
-    }
-    shops.value = [...shops.value, added]
-    shop.value = added
-  }
-  finally {
-    addingShop.value = false
-  }
-}
 
 const ready = computed(() =>
   shop.value !== undefined
@@ -122,14 +81,10 @@ const BODY_FIELD = {
       <!--
         UInputMenu is the whole shop picker: filtering, keyboard navigation and
         the aria-activedescendant wiring the old inline list never had.
-        `create-item` covers what used to need its own button — when nothing
-        matches, the last row offers to add what they typed, and choosing it
-        fires @create.
       -->
       <UInputMenu
         v-model="shop"
         autofocus
-        create-item
         :items="shops"
         label-key="name"
         :filter-fields="['name']"
@@ -137,12 +92,7 @@ const BODY_FIELD = {
         autocomplete="off"
         :placeholder="t('reviewForm.shopPlaceholder')"
         :ui="MENU"
-        @create="addShop"
-      >
-        <template #create-item-label="{ item }">
-          {{ addingShop ? t('reviewForm.addingShop') : t('reviewForm.addShopNamed', { name: item }) }}
-        </template>
-      </UInputMenu>
+      />
     </UFormField>
 
     <UFormField :label="t('reviewForm.ramenLabel')" :ui="FIELD_LABEL">
