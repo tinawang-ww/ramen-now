@@ -89,8 +89,8 @@ const rows = computed(() => {
   }
 
   return list
-    // 過濾出距離小於等於 0.5 公里 (500 公尺) 的店家
-    .filter(row => row.distance !== null && row.distance <= 0.5)
+    // 過濾出距離小於等於 1 公里 (1000 公尺) 的店家
+    .filter(row => row.distance !== null && row.distance <= 1.0)
     .sort((a, b) => {
       // Both known: plain ascending kilometres.
       return a.distance! - b.distance!
