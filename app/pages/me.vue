@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { StampSummary } from '~~/shared/types'
 import { browserSupportsWebAuthn } from '@simplewebauthn/browser'
 
 definePageMeta({ middleware: 'auth' })
@@ -14,8 +15,27 @@ useSeoMeta({
 const { user, clear, fetch: fetchSession } = useUserSession()
 const { register } = useWebAuthn({ registerEndpoint: '/api/webauthn/register' })
 const { data } = await useFetch('/api/me/reports')
+const { data: stamps } = await useFetch('/api/me/stamps', {
+  default: (): StampSummary[] => [],
+})
 
 const count = computed(() => data.value?.count ?? 0)
+
+/**
+ * Stamp inks. Which shop gets which ink is arbitrary but stable — keyed on the
+ * id, so a stamp never changes color between visits.
+ */
+const STAMP_TONES = [
+  'border-accent/70 text-accent',
+  'border-mist text-mist',
+  'border-matcha text-matcha',
+  'border-ink/40 text-ink/55',
+]
+
+/** UTC on purpose: local formatting could differ between server and client. */
+function stampDate(ms: number) {
+  return new Date(ms).toISOString().slice(0, 10).replaceAll('-', '.')
+}
 
 // Null until mounted: the server can't know, and guessing either way would
 // desync the markup it sent.
@@ -103,6 +123,37 @@ async function addPasskey() {
       <span class="mx-1.5 text-[40px] leading-none tracking-tight text-ink/90 tabular-nums">{{ count }}</span>
       {{ t('me.countSuffix') }}
     </p>
+
+    <!-- The stamp book: one page-worth of round inked stamps, oldest first. -->
+    <section v-if="stamps.length" class="mt-12">
+      <h2 class="text-[13px] leading-5 text-ink/70">
+        {{ t('me.stamps') }}
+      </h2>
+      <p class="mt-0.5 text-[11px] leading-4 text-ink/35">
+        {{ t('me.stampsHint') }}
+      </p>
+
+      <ul class="mt-5 flex flex-wrap gap-x-5 gap-y-6">
+        <li v-for="stamp in stamps" :key="stamp.shopId" class="w-[4.5rem]">
+          <!-- Rotation is keyed on the id too: hand-stamped, but never re-inked. -->
+          <span
+            class="mx-auto flex size-[4.5rem] flex-col items-center justify-center rounded-full border-2"
+            :class="STAMP_TONES[stamp.shopId % STAMP_TONES.length]"
+            :style="{ transform: `rotate(${(stamp.shopId % 7) - 3}deg)` }"
+            aria-hidden="true"
+          >
+            <span class="text-[22px] leading-7">{{ [...stamp.name][0] }}</span>
+            <span class="text-[10px] leading-3 tabular-nums">×{{ stamp.reports }}</span>
+          </span>
+          <span class="mt-1.5 block truncate text-center text-[10px] leading-4 text-ink/45">
+            {{ stamp.name }}
+          </span>
+          <span class="block text-center text-[9px] leading-3 tabular-nums text-mist">
+            {{ stampDate(stamp.firstAt) }}
+          </span>
+        </li>
+      </ul>
+    </section>
 
     <p
       class="mt-8 text-[11px] leading-4 transition-colors duration-200"

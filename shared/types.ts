@@ -12,6 +12,15 @@ export interface ShopSummary {
   requestedAt: number | null
 }
 
+export interface StampSummary {
+  shopId: number
+  name: string
+  /** Reports this user has filed for the shop — the ×N inked on the stamp. */
+  reports: number
+  /** First report's timestamp in ms — the date on the stamp. */
+  firstAt: number
+}
+
 export interface ReviewSummary {
   id: number
   shopId: number
