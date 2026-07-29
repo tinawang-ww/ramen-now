@@ -1,22 +1,20 @@
--- The real shop list, imported from public/store_info.json.
+-- The real shop list, generated from public/store_info.json.
 --
--- Name, lat/lng and seat counts land here (688 shops, 177 of them with a
--- seat count). The source file also carries payment, queue and ordering fields,
--- which have no column yet.
+-- 688 shops with names and coordinates, 177 of them with a seat count.
+-- The source file also carries payment, queue, ordering and toilet fields, which
+-- have no column yet.
 --
--- Safe to re-run, and it matches on name throughout rather than on id: the
--- cleanup names no real shop, so a second run deletes nothing, a shop already in
--- the table is skipped instead of duplicated, and seat counts are refreshed in
--- place so a re-import picks up newly counted shops.
+-- Nothing is deleted here. An earlier version of this seed removed the shops that
+-- had been typed in by hand, and because reviews.shop_id and reports.shop_id are
+-- both "on delete cascade", every write-up and report attached to those shops went
+-- with them — silently, since only reports were deleted explicitly. Matching on
+-- name and only ever inserting or updating means a re-run costs nothing.
 --
---   wrangler d1 execute ramen-now --remote --file=./server/database/seeds/0003_real_shops.sql
+--   pnpm wrangler d1 execute ramen-now --remote --file=./server/database/seeds/0003_real_shops.sql
+--
+-- Requires migration 0005 (counter_seats, table_seats).
 
--- Clear out the shops that were typed in by hand while testing. Their reports go
--- first: D1 enforces the foreign key.
-delete from reports where shop_id in (select id from shops where name in ('Roberto', 'Heather', 'Tina', 'Angela', 'Soso', 'Robertoo', '一蘭拉麵', '麵屋武藏', '雞道樂'));
-delete from shops where name in ('Roberto', 'Heather', 'Tina', 'Angela', 'Soso', 'Robertoo', '一蘭拉麵', '麵屋武藏', '雞道樂');
-
--- A staging table rather than a CTE: the insert and the seat refresh are two
+-- A staging table rather than a CTE: the insert and the refresh are separate
 -- statements, and a CTE would only reach the first of them.
 drop table if exists shop_seed;
 create table shop_seed (
@@ -733,14 +731,15 @@ insert into shops (name, lat, lng, counter_seats, table_seats)
 select name, lat, lng, counter_seats, table_seats from shop_seed
 where name not in (select name from shops);
 
--- Shops already on the list keep their row and just take the seat counts. Only
--- where the import actually has a number: null there means "not counted yet",
--- which mustn't wipe a count that came from somewhere else.
+-- Shops already listed keep their row, their id and everything hanging off it,
+-- and just take the newer coordinates and counts. coalesce so an uncounted shop
+-- in the import doesn't wipe a count that came from somewhere else — null there
+-- means "not counted yet", while 0 is a real answer and does overwrite.
 update shops set
+  lat = coalesce((select s.lat from shop_seed s where s.name = shops.name), lat),
+  lng = coalesce((select s.lng from shop_seed s where s.name = shops.name), lng),
   counter_seats = coalesce((select s.counter_seats from shop_seed s where s.name = shops.name), counter_seats),
   table_seats = coalesce((select s.table_seats from shop_seed s where s.name = shops.name), table_seats)
-where name in (
-  select name from shop_seed where counter_seats is not null or table_seats is not null
-);
+where name in (select name from shop_seed);
 
 drop table shop_seed;
