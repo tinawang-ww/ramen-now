@@ -69,6 +69,7 @@ async function submit(payload: {
   price: number
   queue: string
   body: string
+  photoUrl: string | null
 }) {
   if (submitting.value)
     return

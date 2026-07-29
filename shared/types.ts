@@ -31,7 +31,7 @@ export interface ReviewSummary {
   /** Free text — what the queue was like when they went, not a head count. */
   queue: string
   body: string
-  /** Always null for now; the upload stage is what fills it. */
+  /** A /api/photos/… URL this server issued, or null for a text-only write-up. */
   photoUrl: string | null
   /** The author's passkey-picker label. There is no anonymous write-up. */
   author: string
