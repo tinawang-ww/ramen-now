@@ -1,12 +1,24 @@
 <script setup lang="ts">
 import { browserSupportsWebAuthn } from '@simplewebauthn/browser'
 
+definePageMeta({
+  middleware() {
+    const { loggedIn } = useUserSession()
+
+    if (loggedIn.value)
+      return navigateTo('/')
+  },
+})
+
 useSeoMeta({
   title: '用 Passkey 登入 · 拉麵Now',
   description: '用一把 passkey 登入，之後的回報就會記在你名下。',
 })
 
-const { register } = useWebAuthn({ registerEndpoint: '/api/webauthn/register' })
+const { register, authenticate } = useWebAuthn({
+  registerEndpoint: '/api/webauthn/register',
+  authenticateEndpoint: '/api/webauthn/authenticate',
+})
 const { fetch: fetchSession } = useUserSession()
 
 // Null until mounted: the server can't know, and guessing either way would
@@ -14,7 +26,7 @@ const { fetch: fetchSession } = useUserSession()
 const supported = ref<boolean | null>(null)
 onMounted(() => (supported.value = browserSupportsWebAuthn()))
 
-const working = ref(false)
+const working = ref<'signin' | 'create' | null>(null)
 const notice = ref('')
 
 const statusLine = computed(() => {
@@ -23,7 +35,7 @@ const statusLine = computed(() => {
   if (supported.value === false)
     return '這個瀏覽器不支援 Passkey，換一個瀏覽器再試試。'
 
-  return '不用填任何東西，按下去系統就會問你。'
+  return '不用填任何東西，系統會問你要用哪一把。'
 })
 
 /** The label is only what the OS passkey picker shows; collisions don't matter. */
@@ -32,26 +44,39 @@ function randomTag() {
   return [...bytes].map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-async function createPasskey() {
+const CANCELLED = {
+  signin: '已取消，想登入的時候再按一次就好。',
+  create: '已取消，想建立的時候再按一次就好。',
+}
+
+const FAILED = {
+  signin: '登入失敗，請再試一次',
+  create: '建立失敗，請再試一次',
+}
+
+async function startPasskey(kind: 'signin' | 'create') {
   if (!supported.value || working.value)
     return
 
-  working.value = true
+  working.value = kind
   notice.value = ''
 
   try {
-    await register({ userName: `拉麵Now #${randomTag()}` })
+    // Signing in takes no arguments at all — no userName means no
+    // allowCredentials, so the browser lists every passkey it holds for us.
+    await (kind === 'signin'
+      ? authenticate()
+      : register({ userName: `拉麵Now #${randomTag()}` }))
+
     await fetchSession()
     await navigateTo('/')
   }
   catch (error) {
     // Backing out of the system dialog isn't a failure, so it doesn't read as one.
-    notice.value = (error as Error)?.name === 'NotAllowedError'
-      ? '已取消，想建立的時候再按一次就好。'
-      : '建立失敗，請再試一次'
+    notice.value = (error as Error)?.name === 'NotAllowedError' ? CANCELLED[kind] : FAILED[kind]
   }
   finally {
-    working.value = false
+    working.value = null
   }
 }
 </script>
@@ -67,14 +92,24 @@ async function createPasskey() {
       </p>
     </header>
 
-    <div class="mt-10">
+    <!-- Most people arriving here already have a passkey, so signing in leads. -->
+    <div class="mt-10 flex items-baseline gap-6">
       <button
         type="button"
-        :disabled="supported === false || working"
+        :disabled="supported === false || working !== null"
         class="text-[15px] leading-6 text-black/90 transition-[opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25"
-        @click="createPasskey()"
+        @click="startPasskey('signin')"
       >
-        {{ working ? '建立中…' : '建立新的 Passkey' }}
+        {{ working === 'signin' ? '登入中…' : '用 Passkey 登入' }}
+      </button>
+
+      <button
+        type="button"
+        :disabled="supported === false || working !== null"
+        class="text-[13px] leading-5 text-black/40 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25 hover-fine:hover:text-black/80"
+        @click="startPasskey('create')"
+      >
+        {{ working === 'create' ? '建立中…' : '建立新的 Passkey' }}
       </button>
     </div>
 
