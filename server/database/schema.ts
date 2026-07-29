@@ -7,6 +7,12 @@ export const shops = sqliteTable('shops', {
   /** WGS84 degrees. Null until someone pins the shop, so it sorts last by distance. */
   lat: real('lat'),
   lng: real('lng'),
+  /**
+   * Seats at the counter and at tables. Null means nobody has counted — which is
+   * a different answer from 0, the shop that genuinely has no tables at all.
+   */
+  counterSeats: integer('counter_seats'),
+  tableSeats: integer('table_seats'),
   /** Newest "someone please report this" ping, or null if nobody has asked. */
   requestedAt: integer('requested_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' })

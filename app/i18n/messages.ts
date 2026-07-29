@@ -40,6 +40,13 @@ const zh = {
   'board.addFailed': '新增失敗，請再試一次',
   'board.alreadyListed': '這家已經在清單上了',
 
+  // Screen-reader tails after the visible figure, so "12" + this reads as a
+  // phrase. One and many for the same reason as me.countSuffix.
+  'seatCounts.counterOne': '個吧台座位',
+  'seatCounts.counterMany': '個吧台座位',
+  'seatCounts.tableOne': '個桌位座位',
+  'seatCounts.tableMany': '個桌位座位',
+
   'shopRow.noReport': '還沒有人回報',
   'shopRow.requestedDot': '有人要求回報',
   'shopRow.minusAria': '減少一人',
@@ -153,6 +160,11 @@ const en = {
   'board.requestFailed': 'Couldn’t send the request — please try again.',
   'board.addFailed': 'Couldn’t add the shop — please try again.',
   'board.alreadyListed': 'That shop is already on the list.',
+
+  'seatCounts.counterOne': 'counter seat',
+  'seatCounts.counterMany': 'counter seats',
+  'seatCounts.tableOne': 'table seat',
+  'seatCounts.tableMany': 'table seats',
 
   'shopRow.noReport': 'No reports yet',
   'shopRow.requestedDot': 'Someone asked for a report',

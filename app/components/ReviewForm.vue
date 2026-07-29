@@ -75,6 +75,8 @@ async function addShop() {
       name: shop.name,
       lat: null,
       lng: null,
+      counterSeats: null,
+      tableSeats: null,
       people: null,
       reportedAt: null,
       requestedAt: null,

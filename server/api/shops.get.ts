@@ -6,6 +6,8 @@ interface RawRow {
   name: string
   lat: number | null
   lng: number | null
+  counterSeats: number | null
+  tableSeats: number | null
   requestedAt: number | null
   people: number | null
   reportedAt: number | null
@@ -21,6 +23,8 @@ export default defineEventHandler(async (event): Promise<ShopSummary[]> => {
       s.name as name,
       s.lat as lat,
       s.lng as lng,
+      s.counter_seats as counterSeats,
+      s.table_seats as tableSeats,
       s.requested_at as requestedAt,
       r.people as people,
       r.created_at as reportedAt
@@ -41,6 +45,8 @@ export default defineEventHandler(async (event): Promise<ShopSummary[]> => {
     name: row.name,
     lat: row.lat === null ? null : Number(row.lat),
     lng: row.lng === null ? null : Number(row.lng),
+    counterSeats: row.counterSeats === null ? null : Number(row.counterSeats),
+    tableSeats: row.tableSeats === null ? null : Number(row.tableSeats),
     // Timestamps are stored as unix seconds; the client works in ms.
     requestedAt: row.requestedAt === null ? null : Number(row.requestedAt) * 1000,
     people: row.people === null ? null : Number(row.people),

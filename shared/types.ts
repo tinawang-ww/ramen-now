@@ -4,6 +4,10 @@ export interface ShopSummary {
   /** WGS84 degrees, or null when the shop has no pin yet. */
   lat: number | null
   lng: number | null
+  /** Counter seats, or null when nobody has counted them. 0 is a real answer. */
+  counterSeats: number | null
+  /** Table seats, or null when nobody has counted them. 0 is a real answer. */
+  tableSeats: number | null
   /** People queuing in the newest report, or null when nobody has reported yet. */
   people: number | null
   /** Newest report's timestamp in ms, or null. */

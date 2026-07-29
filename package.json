@@ -33,6 +33,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^9.2.0",
     "@cloudflare/workers-types": "^5.20260727.1",
+    "@iconify-json/material-symbols": "^1.2.87",
     "@nuxt/eslint": "^1.16.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^10.8.0",

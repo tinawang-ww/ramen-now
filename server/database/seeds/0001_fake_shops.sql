@@ -19,6 +19,27 @@ insert or ignore into shops (id, name, lat, lng, created_at) values
   (9,  '辣味噌 火群',   25.0553, 121.6070, unixepoch() - 86400 * 4),
   (10, '拉麵 天母亭',   25.1177, 121.5320, unixepoch() - 86400 * 2);
 
+-- Seats go on in a second pass, so a database an earlier seed already created
+-- picks them up too — `insert or ignore` above would skip those rows.
+--
+-- The three cases the row has to draw are all here: both counted, counter-only
+-- (no tables is an answer, not a gap), and nobody counted yet — 沾麵 竹取 and
+-- 清湯 潮屋 are left out below, so they draw no seat icons at all.
+with seats(id, counter, tables) as (values
+  (1,  12, 16),
+  (2,  9,  0),
+  (3,  14, 8),
+  (4,  7,  0),
+  (5,  20, 32),
+  (7,  18, 12),
+  (9,  24, 40),
+  (10, 10, 4)
+)
+update shops set
+  counter_seats = (select counter from seats where seats.id = shops.id),
+  table_seats = (select tables from seats where seats.id = shops.id)
+where id in (select id from seats);
+
 insert or ignore into reports (id, shop_id, people, created_at) values
   -- 麵屋 一心 — busy and freshly reported.
   (1,  1, 12, unixepoch() - 60 * 4),

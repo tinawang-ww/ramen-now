@@ -37,6 +37,10 @@ const meta = computed(() => {
   return parts.join(' · ')
 })
 
+const seatsKnown = computed(() =>
+  props.shop.counterSeats !== null || props.shop.tableSeats !== null,
+)
+
 /** Somebody asked for a fresh report and nobody has answered yet. */
 const requested = computed(() =>
   isRequestPending(props.shop.requestedAt, props.shop.reportedAt, props.now),
@@ -98,8 +102,22 @@ function onInput(event: Event) {
 
           <span class="truncate">{{ shop.name }}</span>
         </span>
-        <span class="mt-1 block text-[12px] leading-4 tabular-nums text-black/35">
-          {{ meta }}
+        <!--
+          Wraps rather than truncates. Distance and seat counts answer different
+          questions — how far, and how fast the line ahead moves — so neither gets
+          cut off to save a line on a narrow screen. Both fit on one line on most
+          phones; a long queue squeezing the figures is what pushes seats down.
+
+          No separator dot — the gap and the icons already split the two.
+        -->
+        <span class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[12px] leading-4 tabular-nums text-black/35">
+          <span>{{ meta }}</span>
+
+          <SeatCounts
+            v-if="seatsKnown"
+            :counter="shop.counterSeats"
+            :table="shop.tableSeats"
+          />
         </span>
       </span>
 
