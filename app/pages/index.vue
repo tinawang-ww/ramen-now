@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ShopSummary } from '~~/shared/types'
+import { distanceKm } from '~~/shared/geo'
 
 useSeoMeta({
   title: '拉麵Now · 拉麵排隊回報',
@@ -15,6 +16,61 @@ const nowMs = computed(() => now.value.getTime())
 
 const openId = ref<number | null>(null)
 const notice = ref('')
+
+const {
+  coords: here,
+  status: locationStatus,
+  message: locationMessage,
+  nudging: locationNudging,
+  denied: locationDenied,
+  supported: locationSupported,
+  locate,
+} = useUserLocation()
+
+const query = ref('')
+
+/**
+ * Nearest first once we know where the user is. Shops nobody has pinned keep
+ * their newest-report order at the bottom — an unknown distance isn't a far one.
+ */
+const rows = computed(() => {
+  const from = here.value
+  const keyword = query.value.trim().toLowerCase()
+
+  const list = shops.value
+    .filter(shop => !keyword || shop.name.toLowerCase().includes(keyword))
+    .map(shop => ({
+      shop,
+      distance: from !== null && shop.lat !== null && shop.lng !== null
+        ? distanceKm(from, { lat: shop.lat, lng: shop.lng })
+        : null,
+    }))
+
+  if (from === null)
+    return list
+
+  return list.sort((a, b) => {
+    if (a.distance === null || b.distance === null)
+      return Number(a.distance === null) - Number(b.distance === null)
+
+    return a.distance - b.distance
+  })
+})
+
+const sortedByDistance = computed(() => here.value !== null)
+const searching = computed(() => query.value.trim().length > 0)
+
+/** The bottom line does triple duty: hint, action feedback, location trouble. */
+const statusLine = computed(() => {
+  if (notice.value)
+    return notice.value
+  if (locationNudging.value)
+    return '還在等你允許使用位置…'
+  if (locationMessage.value)
+    return locationMessage.value
+
+  return '超過 90 分鐘的回報會變淡，代表不能當「現在」看。'
+})
 
 let noticeTimer: ReturnType<typeof setTimeout> | undefined
 function flash(message: string) {
@@ -36,7 +92,6 @@ async function report(shop: ShopSummary, people: number) {
 
   shop.people = people
   shop.reportedAt = Date.now()
-  shop.reportCount += 1
   openId.value = null
 
   try {
@@ -64,6 +119,13 @@ watch(adding, async (value) => {
   nameInput.value?.focus()
 })
 
+/** Searching for a shop that isn't listed is the usual way people end up here. */
+function startAdd() {
+  if (!draftName.value)
+    draftName.value = query.value.trim()
+  adding.value = true
+}
+
 function cancelAdd() {
   adding.value = false
   draftName.value = ''
@@ -78,6 +140,8 @@ async function addShop() {
   try {
     const shop = await $fetch('/api/shops', { method: 'POST', body: { name } })
     cancelAdd()
+    // Clear the filter, or the shop they just added could be hidden by it.
+    query.value = ''
     await refresh()
     // Drop them straight into reporting for the shop they just added.
     openId.value = shop.id
@@ -104,22 +168,57 @@ async function addShop() {
       </p>
     </header>
 
-    <ul v-if="shops.length" class="mt-12 border-t border-black/[0.07]">
+    <div class="mt-8 flex items-center gap-3 border-b border-black/[0.07] pb-1.5">
+      <input
+        v-model="query"
+        type="search"
+        enterkeyhint="search"
+        placeholder="搜尋店名"
+        aria-label="搜尋店名"
+        class="min-w-0 flex-1 bg-transparent text-[15px] leading-6 text-black/90 outline-none placeholder:text-black/25 [&::-webkit-search-cancel-button]:hidden"
+      >
+      <button
+        v-if="searching"
+        type="button"
+        class="shrink-0 text-[12px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+        @click="query = ''"
+      >
+        清除
+      </button>
+    </div>
+
+    <!-- Location is asked for here, on a tap — never on load. -->
+    <div v-if="locationSupported" class="mt-5 text-[13px] leading-5">
+      <button
+        v-if="!sortedByDistance"
+        type="button"
+        :disabled="locationStatus === 'locating' || locationDenied"
+        class="text-black/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-black/80"
+        @click="locate()"
+      >
+        {{ locationStatus === 'locating' ? '定位中…' : '⌖ 找我附近的' }}
+      </button>
+
+      <span v-else class="text-black/40">由近到遠排序</span>
+    </div>
+
+    <ul v-if="rows.length" class="mt-8 border-t border-black/[0.07]">
       <ShopRow
-        v-for="(shop, index) in shops"
-        :key="shop.id"
+        v-for="(row, index) in rows"
+        :key="row.shop.id"
         class="stagger-in"
         :style="{ animationDelay: `${Math.min(index, 8) * 40}ms` }"
-        :shop="shop"
+        :shop="row.shop"
+        :distance="row.distance"
         :now="nowMs"
-        :open="openId === shop.id"
-        @toggle="openId = openId === shop.id ? null : shop.id"
-        @report="report(shop, $event)"
+        :open="openId === row.shop.id"
+        @toggle="openId = openId === row.shop.id ? null : row.shop.id"
+        @report="report(row.shop, $event)"
       />
     </ul>
 
-    <p v-if="!shops.length" class="mt-12 text-[13px] leading-5 text-black/35">
-      還沒有店家，先加第一家。
+    <p v-if="!rows.length" class="mt-12 text-[13px] leading-5 text-black/35">
+      {{ searching ? `找不到「${query.trim()}」，換個關鍵字或新增這家。` : '還沒有店家，先加第一家。' }}
     </p>
 
     <div class="mt-8">
@@ -127,7 +226,7 @@ async function addShop() {
         v-if="!adding"
         type="button"
         class="text-[13px] leading-5 text-black/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/80"
-        @click="adding = true"
+        @click="startAdd()"
       >
         ＋ 新增店家
       </button>
@@ -161,10 +260,10 @@ async function addShop() {
 
     <p
       class="mt-6 text-[11px] leading-4 transition-colors duration-200"
-      :class="notice ? 'text-black/55' : 'text-black/25'"
+      :class="notice || locationMessage || locationNudging ? 'text-black/55' : 'text-black/25'"
       role="status"
     >
-      {{ notice || '超過 90 分鐘的回報會變淡，代表不能當「現在」看。' }}
+      {{ statusLine }}
     </p>
   </main>
 </template>

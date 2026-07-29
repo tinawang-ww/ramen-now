@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import type { ShopSummary } from '~~/shared/types'
+import { formatDistance } from '~~/shared/geo'
 import { clampPeople, FRESH_WINDOW_MS, MAX_PEOPLE } from '~~/shared/queue'
 
 const props = defineProps<{
   shop: ShopSummary
   open: boolean
   now: number
+  /** Km from the user, or null when we don't know where either end is. */
+  distance?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -19,10 +22,16 @@ const fresh = computed(() =>
 )
 
 const meta = computed(() => {
-  if (props.shop.reportedAt === null)
-    return '還沒有人回報'
+  const parts = []
 
-  return `${formatAgo(props.shop.reportedAt, props.now)} · ${props.shop.reportCount} 次回報`
+  if (props.distance !== null && props.distance !== undefined)
+    parts.push(formatDistance(props.distance))
+
+  parts.push(props.shop.reportedAt === null
+    ? '還沒有人回報'
+    : formatAgo(props.shop.reportedAt, props.now))
+
+  return parts.join(' · ')
 })
 
 // The 0fr → 1fr grid trick collapses to 0px once the child clips its overflow,

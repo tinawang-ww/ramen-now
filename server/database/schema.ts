@@ -1,9 +1,12 @@
 import { sql } from 'drizzle-orm'
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 export const shops = sqliteTable('shops', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
+  /** WGS84 degrees. Null until someone pins the shop, so it sorts last by distance. */
+  lat: real('lat'),
+  lng: real('lng'),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
