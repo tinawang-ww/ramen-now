@@ -25,6 +25,14 @@ const MESSAGES: Record<number, MessageKey> = {
 }
 
 /**
+ * Over plain http — a phone opening the dev server by LAN address, say — the
+ * browser refuses geolocation outright, and Chrome reports it as a denied
+ * permission. Saying "you turned it off" would send someone into the wrong
+ * settings screen, so this case names itself.
+ */
+const INSECURE = 'location.insecure' satisfies MessageKey
+
+/**
  * Coarse location for distance sorting.
  *
  * Follows https://web.dev/articles/user-location: the prompt only fires from a
@@ -96,10 +104,18 @@ export function useUserLocation() {
   }
 
   onMounted(async () => {
-    supported.value = 'geolocation' in navigator
-    if (!supported.value)
+    if (!('geolocation' in navigator))
       return
 
+    // No point offering a button the browser will refuse. Say why instead: an
+    // unexplained missing distance reads as a broken app.
+    if (!window.isSecureContext) {
+      status.value = 'error'
+      messageKey.value = INSECURE
+      return
+    }
+
+    supported.value = true
     status.value = 'idle'
 
     if (!('permissions' in navigator))
@@ -110,13 +126,20 @@ export function useUserLocation() {
 
       // Already granted means no prompt, so honouring it on load costs the user
       // nothing. 'prompt' is left alone — that one waits for the gesture.
-      if (permission.state === 'granted')
+      if (permission.state === 'granted') {
         locate()
-      else if (permission.state === 'denied')
+      }
+      else if (permission.state === 'denied') {
+        // The button is disabled from here on, so this line is the only thing
+        // that explains why no row shows a distance.
         denied.value = true
+        messageKey.value = MESSAGES[PERMISSION_DENIED]!
+      }
 
       permission.addEventListener('change', () => {
         denied.value = permission.state === 'denied'
+        if (permission.state === 'denied')
+          messageKey.value = MESSAGES[PERMISSION_DENIED]!
         // Revoked from browser settings mid-session: drop back to the plain list.
         if (permission.state !== 'granted' && coords.value !== null)
           clear()

@@ -123,10 +123,11 @@ const zh = {
   'login.signInFailed': '登入失敗，請再試一次',
   'login.createFailed': '建立失敗，請再試一次',
 
-  'location.denied': '你關閉了定位權限，清單改回依回報時間排序。',
+  'location.denied': '定位權限是關的，清單改回依回報時間排序，也不會顯示距離。',
   'location.unavailable': '拿不到你的位置，請確認定位服務已開啟。',
   'location.timeout': '定位等太久了，再試一次看看。',
   'location.failed': '定位失敗，清單改回依回報時間排序。',
+  'location.insecure': '這個網址不是 HTTPS，瀏覽器不給定位，所以看不到距離。用 localhost 或 https 開啟就會有。',
 } as const
 
 const en = {
@@ -240,10 +241,11 @@ const en = {
   'login.signInFailed': 'Couldn’t sign in — please try again.',
   'login.createFailed': 'Couldn’t create it — please try again.',
 
-  'location.denied': 'Location permission is off — the list is back to newest-report order.',
+  'location.denied': 'Location permission is off, so the list is back to newest-report order and distances are hidden.',
   'location.unavailable': 'Couldn’t get your location — check that location services are on.',
   'location.timeout': 'Locating took too long — give it another try.',
   'location.failed': 'Locating failed — the list is back to newest-report order.',
+  'location.insecure': 'This address isn’t HTTPS, so the browser won’t share your location and distances stay hidden. Open it on localhost or over https instead.',
 } as const satisfies Record<MessageKey, string>
 
 export const messages = { zh, en } satisfies Record<Locale, Record<string, string>>
