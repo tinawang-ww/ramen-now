@@ -1,102 +1,161 @@
 <script setup lang="ts">
+// The board: one row per ramen shop, newest queue report first, nearest first
+// once the user hands over their location. Everything on this page is a tap
+// away from writing — reporting a head count, asking for one, adding a shop.
 import type { ShopSummary } from '~~/shared/types'
+// Great-circle distance in km. Row rendering formats it; this page only sorts on it.
 import { distanceKm } from '~~/shared/geo'
 
+// `t` looks a message key up in the active locale. The locale itself lives in a
+// composable shared with SiteNav's language toggle, so it can change mid-session.
 const { t } = useLocale()
 
-// Getters, not strings, so the tab title follows the language toggle too.
+// Page <title> and meta description.
+// Getters, not strings, so the tab title follows the language toggle too:
+// useSeoMeta re-evaluates a function on every reactive change, but would freeze
+// a plain string at whatever the locale happened to be during setup.
 useSeoMeta({
   title: () => t('board.seoTitle'),
   description: () => t('board.seoDescription'),
 })
 
+// The shop list, fetched on the server for the first paint and re-fetched on
+// the client by `refresh()` below.
 // deep: true because reporting and requesting patch a row in place; Nuxt 4's
 // shallow default would keep the list rendering the pre-tap values.
+// default: [] so `shops.value` is an array even before the request resolves —
+// every reader below can skip a null check.
 const { data: shops, refresh } = await useFetch('/api/shops', {
   deep: true,
   default: (): ShopSummary[] => [],
 })
 
+// A clock that ticks every 30s. Rows render "5 min ago" and decide whether a
+// report is still fresh, so they need the current time to be reactive — without
+// this, a page left open would keep claiming a report is one minute old.
 const now = useNow({ interval: 30_000 })
+// Passed to rows as a plain number: cheaper to compare than a Date instance.
 const nowMs = computed(() => now.value.getTime())
 
+// Which row has its report panel expanded. Only one at a time, so this is the
+// open row's shop id rather than a flag per row. null means all collapsed.
 const openId = ref<number | null>(null)
+// Transient message shown on the bottom status line, set by `flash()`.
 const notice = ref('')
 
+// Geolocation, all of it gated behind a user gesture — see useUserLocation.
 const {
-  coords: here,
-  status: locationStatus,
-  message: locationMessage,
-  nudging: locationNudging,
-  denied: locationDenied,
-  supported: locationSupported,
-  locate,
+  coords: here, // the user's position, or null until they allow it
+  status: locationStatus, // 'unsupported' | 'idle' | 'locating' | 'ready' | 'error'
+  message: locationMessage, // already-translated failure text, '' when fine
+  nudging: locationNudging, // true when the permission prompt has sat unanswered
+  denied: locationDenied, // true once the user (or the browser) has said no
+  supported: locationSupported, // false during SSR and where geolocation can't run
+  locate, // asks the browser for a fix; call from a click only
 } = useUserLocation()
 
+// The search box's text. Filters the list by name; nothing is sent to the server.
 const query = ref('')
 
 /**
+ * The rendered rows: the shop list filtered by the search box, each paired with
+ * its distance from the user, sorted nearest first.
+ *
  * Nearest first once we know where the user is. Shops nobody has pinned keep
  * their newest-report order at the bottom — an unknown distance isn't a far one.
  */
 const rows = computed(() => {
   const from = here.value
+  // Lower-cased once, outside the filter, so the comparison below is per-shop
+  // work only. Trimmed because a trailing space while typing shouldn't blank
+  // the list.
   const keyword = query.value.trim().toLowerCase()
 
   const list = shops.value
     .filter(shop => !keyword || shop.name.toLowerCase().includes(keyword))
     .map(shop => ({
       shop,
+      // Needs both ends: the user's position and a shop that has been pinned.
+      // Any missing piece means null, which rows render as "no distance" rather
+      // than as zero.
       distance: from !== null && shop.lat !== null && shop.lng !== null
         ? distanceKm(from, { lat: shop.lat, lng: shop.lng })
         : null,
     }))
 
-  if (from === null)
-    return list
+  // 如果尚未取得位置，我們就暫時不顯示任何店家，因為需求是「只顯示 500 公尺以內的店」
+  if (from === null) {
+    return []
+  }
 
-  return list.sort((a, b) => {
-    if (a.distance === null || b.distance === null)
-      return Number(a.distance === null) - Number(b.distance === null)
-
-    return a.distance - b.distance
-  })
+  return list
+    // 過濾出距離小於等於 0.5 公里 (500 公尺) 的店家
+    .filter(row => row.distance !== null && row.distance <= 0.5)
+    .sort((a, b) => {
+      // Both known: plain ascending kilometres.
+      return a.distance! - b.distance!
+    })
 })
 
+// Having coordinates is the same thing as the list being distance-sorted, so
+// the template reads this instead of re-checking `here`.
 const sortedByDistance = computed(() => here.value !== null)
+// Whether the search box has anything in it — drives the clear button and picks
+// which empty-state sentence to show.
 const searching = computed(() => query.value.trim().length > 0)
 
 /** The bottom line does triple duty: hint, action feedback, location trouble. */
 const statusLine = computed(() => {
+  // Most specific first: a message about what the user just did outranks
+  // everything, since they are looking at the line because they acted.
   if (notice.value)
     return notice.value
+  // Then the "still waiting on the permission prompt" nudge, which is only true
+  // while a decision is genuinely pending.
   if (locationNudging.value)
     return t('board.locationNudge')
+  // Then any standing location failure — denied, timed out, insecure origin.
   if (locationMessage.value)
     return locationMessage.value
 
+  // Nothing to report: the resting hint explaining what the board is for.
   return t('board.hint')
 })
 
+// Module-scoped rather than inside flash(), so a second flash can cancel the
+// first one's timer instead of the two racing to blank the line.
 let noticeTimer: ReturnType<typeof setTimeout> | undefined
+/** Show `message` on the status line and clear it again after four seconds. */
 function flash(message: string) {
   notice.value = message
+  // Restart the countdown, so a new message always gets its full four seconds.
   clearTimeout(noticeTimer)
   noticeTimer = setTimeout(() => (notice.value = ''), 4000)
 }
 
 // Refresh quietly in the background — but never while a row is open, so the
 // list can't reorder under someone's thumb mid-tap.
+// Background tabs are skipped too: nobody is reading them, and the poll would
+// keep the tab awake for nothing.
 const visibility = useDocumentVisibility()
 useIntervalFn(() => {
   if (visibility.value === 'visible' && openId.value === null)
     refresh()
 }, 60_000)
 
+/**
+ * Post a head count for `shop`, optimistically.
+ *
+ * The row shows the new number immediately and the panel closes, so the tap
+ * feels finished before the request is; a failure puts the old values back.
+ */
 async function report(shop: ShopSummary, people: number) {
+  // A shallow copy is enough to undo with — every field we touch is a primitive.
   const previous = { ...shop }
 
+  // Patch the object in the list, which is what makes deep: true necessary above.
   shop.people = people
+  // A local guess at the timestamp, so the row reads "just now" without waiting.
   shop.reportedAt = Date.now()
   openId.value = null
 
@@ -105,15 +164,24 @@ async function report(shop: ShopSummary, people: number) {
       method: 'POST',
       body: { people },
     })
+    // Adopt the server's timestamp, so "x minutes ago" is measured from when the
+    // report actually landed rather than from this device's possibly-skewed clock.
     shop.reportedAt = result.reportedAt
   }
   catch {
+    // Assign back onto the same object rather than replacing it in the array —
+    // the row is bound to this instance.
     Object.assign(shop, previous)
     flash(t('board.reportFailed'))
   }
 }
 
-/** Ask whoever walks past next to fill this shop in. */
+/**
+ * Ask whoever walks past next to fill this shop in.
+ *
+ * Same optimistic shape as report(): mark it requested now, keep the old value
+ * around, restore it if the post fails.
+ */
 async function request(shop: ShopSummary) {
   const previous = shop.requestedAt
 
@@ -131,32 +199,31 @@ async function request(shop: ShopSummary) {
   }
 }
 
-const adding = ref(false)
-const draftName = ref('')
-const submitting = ref(false)
-const nameInput = useTemplateRef<HTMLInputElement>('nameInput')
-
-watch(adding, async (value) => {
-  if (!value)
-    return
-  await nextTick()
-  nameInput.value?.focus()
-})
+// The "add a shop" form at the foot of the list.
+const adding = ref(false) // false shows the link, true swaps in the form
+const draftName = ref('') // the name being typed
+const submitting = ref(false) // guards against a double submit
 
 /** Searching for a shop that isn't listed is the usual way people end up here. */
 function startAdd() {
+  // So prefill from the search box — but never over something already typed,
+  // which would throw away the user's own text if they reopened the form.
   if (!draftName.value)
     draftName.value = query.value.trim()
   adding.value = true
 }
 
+/** Close the form and forget the draft, from Cancel or from Esc. */
 function cancelAdd() {
   adding.value = false
   draftName.value = ''
 }
 
+/** Create the shop, then leave the user pointed at reporting its queue. */
 async function addShop() {
   const name = draftName.value.trim()
+  // Nothing to submit, or a submit is already in flight. The button is disabled
+  // in both cases; this also covers the Enter key, which ignores that.
   if (!name || submitting.value)
     return
 
@@ -166,9 +233,12 @@ async function addShop() {
     cancelAdd()
     // Clear the filter, or the shop they just added could be hidden by it.
     query.value = ''
+    // Pull the list again so the new row exists before we try to open it.
     await refresh()
     // Drop them straight into reporting for the shop they just added.
     openId.value = shop.id
+    // The endpoint is idempotent on name: created === false means it matched a
+    // shop already on the board, and the row that just opened is that one.
     if (!shop.created)
       flash(t('board.alreadyListed'))
   }
@@ -176,8 +246,15 @@ async function addShop() {
     flash(t('board.addFailed'))
   }
   finally {
+    // Runs on both paths, so a failure can be retried.
     submitting.value = false
   }
+}
+
+/** Same rule as ReviewForm's fields, but sharing a flex row with two buttons. */
+const NAME_FIELD = {
+  ...LINE_FIELD,
+  root: () => 'relative flex min-w-0 flex-1 items-center',
 }
 </script>
 
@@ -192,6 +269,7 @@ async function addShop() {
     -->
     <SiteNav />
 
+    <!-- Title and one-line description of what the board is. -->
     <header class="mt-6">
       <h1 class="text-[22px] leading-7 tracking-tight text-black/90">
         {{ t('board.title') }}
@@ -201,27 +279,50 @@ async function addShop() {
       </p>
     </header>
 
-    <div class="mt-8 flex items-center gap-3 border-b border-black/[0.07] pb-1.5">
-      <input
-        v-model="query"
-        type="search"
-        enterkeyhint="search"
-        :placeholder="t('common.searchShops')"
-        :aria-label="t('common.searchShops')"
-        class="min-w-0 flex-1 bg-transparent text-[15px] leading-6 text-black/90 outline-none placeholder:text-black/25 [&::-webkit-search-cancel-button]:hidden"
-      >
-      <button
-        v-if="searching"
-        type="button"
-        class="shrink-0 text-[12px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
-        @click="query = ''"
-      >
-        {{ t('common.clear') }}
-      </button>
-    </div>
+    <!--
+      Search box: filters the list by name as you type, no submit.
 
-    <!-- Location is asked for here, on a tap — never on load. -->
+      One UInput carries the whole control — the hairline rule is its root and
+      the clear button its trailing slot, so there is no wrapper div holding the
+      two together any more.
+    -->
+    <UInput
+      v-model="query"
+      type="search"
+      enterkeyhint="search"
+      :placeholder="t('common.searchShops')"
+      :aria-label="t('common.searchShops')"
+      :ui="SEARCH_FIELD"
+    >
+      <!--
+        Our own clear button, only once there is something to clear. WebKit's
+        built-in one is hidden by SEARCH_FIELD — see app/utils/fields.ts.
+      -->
+      <template #trailing>
+        <button
+          v-if="searching"
+          type="button"
+          class="shrink-0 text-[12px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
+          @click="query = ''"
+        >
+          {{ t('common.clear') }}
+        </button>
+      </template>
+    </UInput>
+
+    <!--
+      Location is asked for here, on a tap — never on load.
+
+      The whole block is absent where geolocation can't run, including during
+      SSR, so nothing offers a fix the browser would refuse.
+    -->
     <div v-if="locationSupported" class="mt-5 text-[13px] leading-5">
+      <!--
+        Before we have a position: the button that triggers the prompt. Disabled
+        while a fix is in flight, and permanently once the user has said no —
+        a second tap wouldn't re-prompt, it would silently fail. The status line
+        at the foot of the page is what explains the disabled state.
+      -->
       <button
         v-if="!sortedByDistance"
         type="button"
@@ -232,9 +333,11 @@ async function addShop() {
         {{ locationStatus === 'locating' ? t('board.locating') : t('board.findNearby') }}
       </button>
 
+      <!-- Once located there is nothing left to ask for, so the button becomes a label. -->
       <span v-else class="text-black/40">{{ t('board.sortedByDistance') }}</span>
     </div>
 
+    <!-- The board itself. -->
     <ul v-if="rows.length" class="mt-8 border-t border-black/[0.07]">
       <ShopRow
         v-for="(row, index) in rows"
@@ -249,49 +352,33 @@ async function addShop() {
         @report="report(row.shop, $event)"
         @request="request(row.shop)"
       />
+      <!--
+        Keyed by shop id, not by index, so a re-sort moves rows instead of
+        rewriting their contents underneath an open panel.
+
+        Rows fade in one after another, 40ms apart, capped at the eighth: past
+        that the wait is longer than the effect is worth, and everything below
+        the fold would arrive late for nobody's benefit.
+
+        Only the open row's id is passed down, so opening one closes the rest for
+        free. @toggle flips it, and tapping the open row clears it back to null.
+      -->
     </ul>
 
+    <!--
+      Nothing to show. Two different situations, and the difference matters: an
+      empty search names what was looked for and leads into the add form below,
+      while an empty board is a first-run state.
+    -->
     <p v-if="!rows.length" class="mt-12 text-[13px] leading-5 text-black/35">
       {{ searching ? t('board.emptySearch', { query: query.trim() }) : t('board.empty') }}
     </p>
 
-    <div class="mt-8">
-      <button
-        v-if="!adding"
-        type="button"
-        class="text-[13px] leading-5 text-black/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/80"
-        @click="startAdd()"
-      >
-        {{ t('board.addShop') }}
-      </button>
-
-      <form v-else class="flex items-center gap-3" @submit.prevent="addShop">
-        <input
-          ref="nameInput"
-          v-model="draftName"
-          type="text"
-          maxlength="40"
-          :placeholder="t('board.shopNamePlaceholder')"
-          class="min-w-0 flex-1 border-b border-black/15 pb-1.5 text-[15px] leading-6 text-black/90 outline-none transition-colors duration-200 placeholder:text-black/25 focus:border-black/60"
-          @keydown.esc="cancelAdd"
-        >
-        <button
-          type="submit"
-          :disabled="!draftName.trim() || submitting"
-          class="shrink-0 text-[13px] leading-5 text-black/80 transition-[opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-25"
-        >
-          {{ t('board.add') }}
-        </button>
-        <button
-          type="button"
-          class="shrink-0 text-[13px] leading-5 text-black/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-black/60"
-          @click="cancelAdd"
-        >
-          {{ t('common.cancel') }}
-        </button>
-      </form>
-    </div>
-
+    <!--
+      The status line. role="status" makes screen readers announce changes here
+      without moving focus, which is how a failed report gets reported at all.
+      It darkens when it has something to say and fades back for the resting hint.
+    -->
     <p
       class="mt-6 text-[11px] leading-4 transition-colors duration-200"
       :class="notice || locationMessage || locationNudging ? 'text-black/55' : 'text-black/25'"

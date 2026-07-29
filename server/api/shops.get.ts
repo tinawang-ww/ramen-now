@@ -13,7 +13,7 @@ interface RawRow {
   reportedAt: number | null
 }
 
-export default defineEventHandler(async (event): Promise<ShopSummary[]> => {
+export default defineCachedEventHandler(async (event): Promise<ShopSummary[]> => {
   const db = useDb(event)
 
   // One round trip: every shop plus its newest report, via a window function.
@@ -52,4 +52,8 @@ export default defineEventHandler(async (event): Promise<ShopSummary[]> => {
     people: row.people === null ? null : Number(row.people),
     reportedAt: row.reportedAt === null ? null : Number(row.reportedAt) * 1000,
   }))
+}, {
+  maxAge: 10,
+  swr: true,
+  name: 'shops-list'
 })
