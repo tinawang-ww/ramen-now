@@ -3,8 +3,14 @@ import type { MaybeRefOrGetter } from 'vue'
 /** A swipe starting this close to the left edge belongs to iOS Safari's back gesture. */
 const EDGE_GUARD_PX = 32
 
-/** Interactive controls own their own horizontal drags — steppers, text selection. */
-const INTERACTIVE = 'input, textarea, button, a, [role="button"]'
+/**
+ * Controls where a horizontal drag means something else: moving the caret,
+ * selecting text. Buttons and links are deliberately absent — the board's rows
+ * are full-width buttons, so excluding them would kill the gesture across most
+ * of the page, and a touch that travels far enough to count as a swipe is past
+ * the browser's slop threshold, so it never lands as a click anyway.
+ */
+const INTERACTIVE = 'input, textarea, select, [contenteditable], [role="slider"]'
 
 /**
  * Swipe left or right to move between the main surfaces. Additive only: the nav

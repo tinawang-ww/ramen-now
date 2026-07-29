@@ -93,7 +93,9 @@
 **四個必要的閘門**，少一個都會變成惱人的誤觸：
 
 1. **只在主畫面上生效**：`surfaceIndex(route.path) < 0` 就什麼都不做，所以 `/login`、`/me` 不受影響。
-2. **不從互動元件上起手**：`onSwipeStart` 時若 `(e.target as HTMLElement).closest('input, textarea, button, a, [role="button"]')` 有東西就放棄——`ShopRow` 的 ＋／− 步進器、食記表單的 `<textarea>` 選字都要能正常用。
+2. **不從「橫向拖曳另有意義」的元件上起手**：`onSwipeStart` 時若 `(e.target as HTMLElement).closest('input, textarea, select, [contenteditable], [role="slider"]')` 有東西就放棄——移動游標與選字要能正常用。
+
+   **`button` 與 `a` 刻意不在這個清單裡。** 看板的每一列都是整行寬的 `<button>`，把 button 排除等於在整個看板上都滑不動，手勢就廢了。而觸控只要走得夠遠、到得了 swipe 的門檻，就早已超過瀏覽器的 slop threshold，不會再變成 click——滑過某一列不會順手把它展開，輕點它照樣會展開。（這一條是實測改出來的：原本把 button 一起排除，結果 `/` 上幾乎滑不動。）
 3. **不搶 iOS Safari 的邊緣返回**：起點在畫面左緣 32px 內就放棄。
 4. **要求水平為主**：`Math.abs(lengthX) > Math.abs(lengthY) * 1.5` 才算。`direction` 本身已挑主軸，這個倍率是讓斜著滑的拇指捲動不會誤切頁。
 

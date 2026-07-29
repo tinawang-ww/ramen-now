@@ -179,7 +179,14 @@ async function addShop() {
 </script>
 
 <template>
-  <main class="mx-auto min-h-[100dvh] w-full max-w-[30rem] px-6 pb-24 pt-20">
+  <main class="mx-auto min-h-[100dvh] w-full max-w-[30rem] pb-24 pl-6 pr-8 pt-20 sm:pr-6">
+    <!--
+      The right edge is wider on phones, where the scroll indicator rides over it.
+
+      This tag must stay the template's only root node — even a comment beside it
+      counts as a second one, and the page transition would then have nothing to
+      wrap, so the route renders empty until a reload.
+    -->
     <SiteNav />
 
     <header class="mt-6">

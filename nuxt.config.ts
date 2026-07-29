@@ -6,9 +6,6 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   auth: { webAuthn: true },
   app: {
-    // A base value so transitions are on at all; the global middleware swaps the
-    // name per navigation to match the direction of travel.
-    pageTransition: { name: 'surface-forward', mode: 'out-in' },
     head: {
       htmlAttrs: { lang: 'zh-Hant-TW' },
       meta: [{ name: 'theme-color', content: '#ffffff' }],
