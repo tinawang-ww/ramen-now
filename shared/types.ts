@@ -27,6 +27,8 @@ export interface StampSummary {
   reports: number
   /** First report's timestamp in ms — the date on the stamp. */
   firstAt: number
+  /** Nobody has reported here more than this user (and they've done it ≥3 times). */
+  regular: boolean
 }
 
 export interface ReviewSummary {

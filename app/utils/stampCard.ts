@@ -34,6 +34,8 @@ export interface StampCardText {
   tagline: string
   /** The host alone — the card is an invitation, not a tracking link. */
   origin: string
+  /** The 常客 chip label; drawn only on stamps that carry the title. */
+  regularLabel: string
 }
 
 function truncate(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
@@ -81,11 +83,28 @@ export function renderStampBook(stamps: StampSummary[], text: StampCardText): Pr
     ctx.translate(cx, cy)
     ctx.rotate(((stamp.shopId % 7) - 3) * Math.PI / 180)
 
+    // Milestone tiers, mirroring the page: gold fill at ×10, dashed ring at ×3.
+    if (stamp.reports >= 10) {
+      ctx.fillStyle = 'rgba(252, 197, 96, 0.25)'
+      ctx.beginPath()
+      ctx.arc(0, 0, 86, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
     ctx.strokeStyle = tone
     ctx.lineWidth = 7
     ctx.beginPath()
     ctx.arc(0, 0, 86, 0, Math.PI * 2)
     ctx.stroke()
+
+    if (stamp.reports >= 3) {
+      ctx.setLineDash([6, 9])
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      ctx.arc(0, 0, 97, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.setLineDash([])
+    }
 
     ctx.fillStyle = tone
     ctx.textAlign = 'center'
@@ -104,6 +123,18 @@ export function renderStampBook(stamps: StampSummary[], text: StampCardText): Pr
     ctx.fillStyle = MIST
     ctx.font = `400 22px ${FONT}`
     ctx.fillText(stampDate(stamp.firstAt), cx, cy + 168)
+
+    if (stamp.regular && text.regularLabel) {
+      ctx.font = `400 20px ${FONT}`
+      const width = ctx.measureText(text.regularLabel).width + 24
+      ctx.fillStyle = 'rgba(252, 197, 96, 0.4)'
+      ctx.beginPath()
+      ctx.roundRect(cx - width / 2, cy + 182, width, 30, 15)
+      ctx.fill()
+      ctx.fillStyle = 'rgba(0, 1, 42, 0.7)'
+      ctx.fillText(text.regularLabel, cx, cy + 203)
+    }
+
     ctx.textAlign = 'left'
   })
 

@@ -72,6 +72,7 @@ async function shareStamps() {
         : '',
       tagline: t('board.tagline'),
       origin: location.host,
+      regularLabel: t('me.regular'),
     })
     const file = new File([blob], 'ramen-now-stamps.png', { type: 'image/png' })
 
@@ -179,10 +180,18 @@ async function addPasskey() {
 
       <ul class="mt-5 flex flex-wrap gap-x-5 gap-y-6">
         <li v-for="stamp in stamps" :key="stamp.shopId" class="w-[4.5rem]">
-          <!-- Rotation is keyed on the id too: hand-stamped, but never re-inked. -->
+          <!--
+            Rotation is keyed on the id too: hand-stamped, but never re-inked.
+            The chop earns its look: a dashed second ring at ×3, gold at ×10 —
+            the outline inherits the tone via currentColor.
+          -->
           <span
             class="mx-auto flex size-[4.5rem] flex-col items-center justify-center rounded-full border-2"
-            :class="STAMP_TONES[stamp.shopId % STAMP_TONES.length]"
+            :class="[
+              STAMP_TONES[stamp.shopId % STAMP_TONES.length],
+              stamp.reports >= 3 ? 'outline outline-1 outline-offset-2 outline-dashed' : '',
+              stamp.reports >= 10 ? 'bg-marigold/25' : '',
+            ]"
             :style="{ transform: `rotate(${(stamp.shopId % 7) - 3}deg)` }"
             aria-hidden="true"
           >
@@ -194,6 +203,13 @@ async function addPasskey() {
           </span>
           <span class="block text-center text-[9px] leading-3 tabular-nums text-mist">
             {{ stampDate(stamp.firstAt) }}
+          </span>
+          <!-- Nobody has reported here more than they have. -->
+          <span
+            v-if="stamp.regular"
+            class="mx-auto mt-1 block w-fit rounded-full bg-marigold/40 px-1.5 text-[9px] leading-[14px] text-ink/70"
+          >
+            {{ t('me.regular') }}
           </span>
         </li>
       </ul>
