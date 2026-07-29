@@ -4,9 +4,8 @@ const { t, toggleLocale } = useLocale()
 </script>
 
 <template>
-  <nav class="flex items-baseline justify-between gap-4">
-    <!-- Weight alone marks the current surface: this app has no boxed UI anywhere. -->
-    <div class="flex min-w-0 items-baseline gap-5">
+  <nav class="flex items-baseline justify-between w-full">
+    <div class="flex items-baseline gap-x-6">
       <!--
         `raw` keeps ULink's own theme out of it and leaves only what it's here
         for: resolving the active route, which lands aria-current="page" too.
@@ -19,14 +18,14 @@ const { t, toggleLocale } = useLocale()
         exact
         :to="surface.path"
         class="text-[13px] leading-5 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97]"
-        active-class="text-ink/90"
+        active-class="text-ink"
         inactive-class="text-ink/30 hover-fine:hover:text-ink/60"
       >
         {{ t(surface.labelKey) }}
       </ULink>
     </div>
 
-    <div class="flex shrink-0 items-baseline gap-4">
+    <div class="flex items-baseline gap-x-6">
       <!-- Shows the language you'd switch to, not the one you're in. -->
       <ULink
         raw
@@ -44,7 +43,7 @@ const { t, toggleLocale } = useLocale()
         :to="loggedIn ? '/me' : '/login'"
         class="max-w-[7rem] truncate text-[11px] leading-4 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
       >
-        {{ loggedIn ? user?.label : t('nav.signIn') }}
+        {{ loggedIn ? t('nav.me') : t('nav.signIn') }}
       </ULink>
     </div>
   </nav>

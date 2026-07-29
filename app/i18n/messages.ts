@@ -9,24 +9,26 @@ import type { Locale } from '~~/shared/locale'
  * falling back at runtime.
  */
 const zh = {
-  'nav.board': '看板',
+  'nav.board': '排隊情報',
   'nav.feed': '食記',
   'nav.signIn': '登入',
+  'nav.me': '個人主頁',
   'nav.localeButton': 'EN',
   'nav.localeAria': '切換成英文',
 
   'common.cancel': '取消',
   'common.clear': '清除',
   'common.searchShops': '搜尋店名',
-  'common.backToBoard': '← 回看板',
+  'common.backToBoard': '← 回排隊情報',
 
   'board.seoTitle': '拉麵Now · 拉麵排隊回報',
   'board.seoDescription': '大家一起回報拉麵店現在的排隊狀況，出門前先看一眼。',
-  'board.title': '現在排幾人',
+  'board.title': '現在排幾人？',
   'board.tagline': '路過的人回報，出門前先看一眼。',
   'board.locating': '定位中…',
   'board.findNearby': '⌖ 找我附近的',
   'board.sortedByDistance': '由近到遠排序',
+  'board.clickEmptyBowl': '點擊空碗回報排隊人數',
   'board.emptySearch': '找不到「{query}」，換個關鍵字或新增這家。',
   'board.empty': '還沒有店家，先加第一家。',
   'board.addShop': '＋ 新增店家',
@@ -68,6 +70,8 @@ const zh = {
   'shopRow.readReviews': '看這家的食記 →',
   'shopRow.share': '分享現況',
   'shopRow.noLine': '不用排',
+  'shopRow.tooFar': '距離過遠（需在 500 公尺內）',
+  'shopRow.locationRequired': '需允許定位才能回報',
 
   'feed.seoTitle': '食記 · 拉麵Now',
   'feed.seoDescription': '大家吃過的拉麵：點了什麼、多少錢、當時排隊排多久。',
@@ -79,7 +83,7 @@ const zh = {
   'feed.submitFailed': '送出失敗，請再試一次',
   'feed.emptySearch': '找不到「{query}」的食記。',
   'feed.empty': '還沒有人寫食記，吃完的時候寫一下。',
-  'feed.hint': '看板說現在排幾人，食記說值不值得去排。',
+  'feed.hint': '排隊情報說現在排幾人，食記說值不值得去排。',
 
   'reviewCard.queue': '排隊：{queue}',
 
@@ -146,6 +150,7 @@ const en = {
   'nav.board': 'Board',
   'nav.feed': 'Reviews',
   'nav.signIn': 'Sign in',
+  'nav.me': 'Profile',
   'nav.localeButton': '中',
   'nav.localeAria': 'Switch to Chinese',
 
@@ -156,11 +161,12 @@ const en = {
 
   'board.seoTitle': 'Ramen Now · Live ramen queue reports',
   'board.seoDescription': 'Everyone reports how long the line is at ramen shops right now — check before you head out.',
-  'board.title': 'How long is the line',
+  'board.title': 'How long is the line?',
   'board.tagline': 'Passers-by report the line, so you can check before heading out.',
   'board.locating': 'Locating…',
   'board.findNearby': '⌖ Find shops near me',
   'board.sortedByDistance': 'Sorted nearest first',
+  'board.clickEmptyBowl': 'Click empty bowl to report',
   'board.emptySearch': 'No shops match “{query}” — try another keyword, or add it below.',
   'board.empty': 'No shops yet — add the first one.',
   'board.addShop': '＋ Add a shop',
@@ -200,6 +206,8 @@ const en = {
   'shopRow.readReviews': 'Read its reviews →',
   'shopRow.share': 'Share the line',
   'shopRow.noLine': 'No line',
+  'shopRow.tooFar': 'Too far (must be within 500m)',
+  'shopRow.locationRequired': 'Location required to report',
 
   'feed.seoTitle': 'Reviews · Ramen Now',
   'feed.seoDescription': 'Bowls people have eaten: what they ordered, what it cost, and how long the line was.',

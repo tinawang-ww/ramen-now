@@ -29,6 +29,8 @@ const emit = defineEmits<{
   report: [people: number]
   // 發出請求更新排隊人數的事件
   request: []
+  // 發出元件進入或離開可視範圍的事件
+  visible: [shopId: number, isVisible: boolean]
 }>()
 
 // 取得多國語系 (i18n) 的設定與翻譯函式 `t`
@@ -41,6 +43,11 @@ const { locale, t } = useLocale()
  */
 const fresh = computed(() =>
   props.shop.reportedAt !== null && props.now - props.shop.reportedAt < FRESH_WINDOW_MS,
+)
+
+// 如果回報是在 30 分鐘內，文字顏色將使用 mist (在樣式上會更顯眼)
+const isRecent = computed(() =>
+  props.shop.reportedAt !== null && props.now - props.shop.reportedAt <= 30 * 60 * 1000,
 )
 
 // 計算顯示在店家名稱下方的中介資訊字串 (如距離、多久前回報)
@@ -97,6 +104,13 @@ watch(() => props.open, (open) => {
  */
 const count = computed(() => draft.value ?? 0)
 
+const reportButtonStyle = computed(() => {
+  if (count.value <= 5) return 'bg-mist text-ink/90'
+  if (count.value <= 10) return 'bg-matcha text-ink/90'
+  if (count.value <= 20) return 'bg-marigold text-ink/90'
+  return 'bg-accent text-white'
+})
+
 // 決定在列表中要顯示的排隊人數：
 // 如果 Modal 開著，為了讓使用者即時看到自己正在選擇的人數，就顯示 draft 變數的值
 // 如果 Modal 關著，就顯示 props 傳進來的實際人數
@@ -106,29 +120,65 @@ const shownPeople = computed(() => props.open ? count.value : props.shop.people)
 // 如果 Modal 開著 (使用者準備回報新資料)，或者資料本身是新鮮的，就顯示為新鮮狀態
 const shownFresh = computed(() => props.open || fresh.value)
 
+const canReport = computed(() => props.distance !== null && props.distance !== undefined && props.distance <= 0.5)
+
+const reportButtonLabel = computed(() => {
+  if (props.distance === null || props.distance === undefined) return t('shopRow.locationRequired')
+  if (props.distance > 0.5) return t('shopRow.tooFar')
+  return t('shopRow.report')
+})
+
 /** 定義 Modal 中增減排隊人數按鈕的共用 CSS 樣式字串 */
 const STEP_BUTTON = 'size-9 rounded-full border border-ink/[0.09] text-[15px] leading-none text-ink/70 transition-[transform,border-color,opacity] duration-150 ease-out-strong active:scale-[0.94] disabled:opacity-25 hover-fine:hover:border-ink/25'
+
+const shopImageSrc = computed(() => {
+  const stamps = [
+    '/stamps/ramen2.webp',
+    '/stamps/ramen3.webp',
+    '/stamps/ramen4.webp',
+    '/stamps/ramen5.webp',
+    '/stamps/stamp1.webp',
+    '/stamps/stamp2.webp',
+    '/stamps/stamp3.webp',
+  ]
+  return stamps[props.shop.id % stamps.length]
+})
+
+const thumbnailSrc = computed(() => {
+  if (requested.value) return '/stamps/empty_bowl.webp'
+  return shopImageSrc.value
+})
+
+const rowRef = ref<HTMLElement | null>(null)
+const isVisible = useElementVisibility(rowRef)
+
+watch(isVisible, (visible) => {
+  emit('visible', props.shop.id, visible)
+}, { immediate: true })
 </script>
 
 <template>
   <!-- 每間店的列容器，底部加上邊界分隔線 -->
-  <li class="border-b border-ink/[0.07]">
+  <li ref="rowRef" class="border-b border-ink/[0.07]">
     <!-- 一般檢視區塊 (這部分總是會顯示在畫面上) -->
-    <div class="flex w-full items-center gap-4 py-5">
-      <!-- 請求回報按鈕 -->
-      <!-- 如果已經發出請求 (requested 為 true)，則停用此按鈕 (:disabled) 並套用不同樣式 -->
-      <!-- 點擊時使用 .stop 修飾符阻止事件冒泡，並觸發 'request' 事件發送請求 -->
-      <button
-        type="button"
-        :disabled="requested"
-        class="shrink-0 flex size-10 items-center justify-center rounded-full transition-[color,transform,background-color] duration-150 ease-out-strong active:scale-[0.97] focus:outline-none"
-        :class="requested ? 'bg-ink/10 text-ink/90' : 'bg-ink/5 text-ink/40 hover-fine:hover:bg-ink/10 hover-fine:hover:text-ink/70'"
-        @click.stop="emit('request')"
-        :aria-label="requested ? t('shopRow.alreadyRequested') : t('shopRow.requestReport')"
-      >
-        <!-- 依據是否已被請求來顯示不同的鈴鐺圖示 (實心或空心) -->
-        <UIcon :name="requested ? 'material-symbols:notifications-active' : 'material-symbols:notifications-outline'" class="size-5" />
-      </button>
+    <div class="flex w-full items-center gap-4 py-8">
+      <!-- 請求回報按鈕 / 狀態圖示 -->
+      <!-- 點擊時觸發 'request' 事件發送請求。大於90分鐘無回報會變為灰階。 -->
+      <div class="relative shrink-0 flex items-center justify-center">
+        <!-- 水波紋效果 (只有在 request 狀態下顯示) -->
+        <div v-if="requested" class="absolute inset-0 rounded-full animate-ping [animation-duration:4s]" :class="isRecent ? 'bg-mist/50' : 'bg-accent/50'"></div>
+        <div v-if="requested" class="absolute -inset-1.5 rounded-full animate-pulse" :class="isRecent ? 'bg-mist/20' : 'bg-accent/20'"></div>
+
+        <button
+          type="button"
+          class="relative z-10 flex size-14 items-center justify-center rounded-full overflow-hidden transition-[transform,filter,opacity] duration-150 ease-out-strong active:scale-[0.97] focus:outline-none hover-fine:hover:opacity-85"
+          :class="!fresh && !requested ? 'grayscale opacity-75' : ''"
+          @click.stop="requested ? emit('toggle') : emit('request')"
+          :aria-label="requested ? t('shopRow.alreadyRequested') : t('shopRow.requestReport')"
+        >
+          <img :src="thumbnailSrc" class="w-full h-full object-cover" alt="" />
+        </button>
+      </div>
 
       <!-- 店家資訊與排隊人數顯示區塊 (點擊此區塊會觸發 'toggle' 事件打開回報 Modal) -->
       <button
@@ -140,7 +190,7 @@ const STEP_BUTTON = 'size-9 rounded-full border border-ink/[0.09] text-[15px] le
         <span class="min-w-0">
           <span class="flex min-w-0 items-start gap-2 text-[17px] leading-6 tracking-tight text-ink/90">
             <!-- 顯示店家名稱，長度過長時會自動換行 break-words -->
-            <span class="break-words">{{ shop.name }}</span>
+            <span class="break-words font-shop text-[20px] leading-7">{{ shop.name }}</span>
           </span>
           <span class="mt-1 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 tabular-nums text-[12px] leading-4 text-ink/35">
             <span v-if="noLine" class="rounded-full bg-matcha/35 px-2 text-[10px] leading-4 text-ink/70">{{ t('shopRow.noLine') }}</span>
@@ -169,12 +219,12 @@ const STEP_BUTTON = 'size-9 rounded-full border border-ink/[0.09] text-[15px] le
         <!-- Modal 的主要內容區塊設計，白色背景、圓角、陰影 -->
         <div class="bg-white p-6 rounded-[20px] shadow-sm">
           <!-- Modal 頂部：顯示店名與關閉按鈕 -->
-          <div class="flex items-start justify-between mb-8 gap-4">
-            <h3 class="text-[17px] leading-6 font-medium text-ink/90 break-words">{{ shop.name }}</h3>
-            <!-- 點擊叉叉按鈕觸發 'toggle' 關閉 Modal -->
-            <button type="button" class="mt-0.5 shrink-0 text-ink/40 transition-colors hover:text-ink/70" @click="emit('toggle')">
+          <div class="relative flex flex-col items-center mb-8">
+            <button type="button" class="absolute right-0 top-0 text-ink/40 transition-colors hover:text-ink/70" @click="emit('toggle')">
               <UIcon name="material-symbols:close" class="size-6" />
             </button>
+            <h3 class="text-[22px] leading-7 text-ink/90 break-words text-center px-8 font-shop">{{ shop.name }}</h3>
+            <img :src="shopImageSrc" class="size-20 rounded-full object-cover mt-4 shadow-sm" alt="" />
           </div>
 
           <!-- 內容區塊：包含人數選擇器與送出按鈕 -->
@@ -213,36 +263,33 @@ const STEP_BUTTON = 'size-9 rounded-full border border-ink/[0.09] text-[15px] le
               <span class="text-[14px] text-ink/50">{{ t('shopRow.inLine') }}</span>
             </div>
 
-            <!-- 送出回報按鈕 -->
-            <!-- 點擊時觸發 'report' 事件，並帶上當前選定的人數 (count) -->
-            <button
-              type="button"
-              class="w-full rounded-full bg-accent py-3.5 text-[15px] font-medium leading-5 text-white transition-transform duration-150 ease-out-strong active:scale-[0.98]"
-              @click="emit('report', count)"
-            >
-              <!-- 顯示 "回報" 或類似的按鈕文字 -->
-              {{ t('shopRow.report') }}
-            </button>
+            <div class="flex flex-col gap-2">
+              <!-- 送出回報按鈕 -->
+              <!-- 點擊時觸發 'report' 事件，並帶上當前選定的人數 (count) -->
+              <button
+                type="button"
+                :disabled="!canReport"
+                class="w-full rounded-full py-3.5 text-[15px] font-medium leading-5 transition-all duration-150 ease-out-strong active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                :class="canReport ? reportButtonStyle : 'bg-ink/5 text-ink/70'"
+                @click="emit('report', count)"
+              >
+                <!-- 顯示 "回報" 或類似的按鈕文字 -->
+                {{ reportButtonLabel }}
+              </button>
+
+              <!-- 要求回報按鈕 (次要操作) -->
+              <button
+                type="button"
+                :disabled="requested"
+                class="w-full rounded-full bg-ink/5 py-3.5 text-[15px] font-medium leading-5 text-ink/70 transition-transform duration-150 ease-out-strong active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                @click="emit('request')"
+              >
+                {{ requested ? t('shopRow.alreadyRequested') : t('shopRow.requestReport') }}
+              </button>
+            </div>
           </div>
 
-          <div class="flex flex-wrap items-baseline justify-center gap-x-4 mt-6">
-            <!-- The board answers "how long now"; the write-ups answer "is it worth it". -->
-            <NuxtLink
-              :to="{ path: '/feed', query: { shop: shop.name } }"
-              class="text-[12px] leading-4 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-accent"
-            >
-              {{ t('shopRow.readReviews') }}
-            </NuxtLink>
 
-            <!-- Every share is a personal invite — this is how the board grows. -->
-            <button
-              type="button"
-              class="text-[12px] leading-4 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-accent"
-              @click="emit('share')"
-            >
-              {{ t('shopRow.share') }}
-            </button>
-          </div>
         </div>
       </template>
     </UModal>
