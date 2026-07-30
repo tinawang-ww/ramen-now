@@ -70,6 +70,11 @@ const rows = computed(() => {
 const sortedByDistance = computed(() => here.value !== null)
 const searching = computed(() => query.value.trim().length > 0)
 
+/** How alive the board is right now — worth saying out loud at the top. */
+const freshCount = computed(() =>
+  shops.value.filter(shop =>
+    shop.reportedAt !== null && nowMs.value - shop.reportedAt < FRESH_WINDOW_MS).length)
+
 /** Shops someone flagged and nobody has answered yet — the board's open asks. */
 const pendingCount = computed(() =>
   shops.value.filter(shop => isRequestPending(shop.requestedAt, shop.reportedAt, nowMs.value)).length)
@@ -254,26 +259,17 @@ async function addShop() {
       <p class="mt-1.5 text-[13px] leading-5 text-ink/35">
         {{ t('board.tagline') }}
       </p>
+      <p v-if="shops.length" class="mt-3 text-[12px] leading-4 tabular-nums text-mist">
+        {{ t('board.stats', { shops: shops.length, fresh: freshCount }) }}
+      </p>
     </header>
 
-    <div class="mt-8 flex items-center gap-3 border-b border-ink/[0.07] pb-1.5">
-      <input
-        v-model="query"
-        type="search"
-        enterkeyhint="search"
-        :placeholder="t('common.searchShops')"
-        :aria-label="t('common.searchShops')"
-        class="min-w-0 flex-1 bg-transparent text-[15px] leading-6 text-ink/90 outline-none placeholder:text-ink/25 [&::-webkit-search-cancel-button]:hidden"
-      >
-      <button
-        v-if="searching"
-        type="button"
-        class="shrink-0 text-[12px] leading-5 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
-        @click="query = ''"
-      >
-        {{ t('common.clear') }}
-      </button>
-    </div>
+    <SearchField
+      v-model="query"
+      class="mt-8"
+      :placeholder="t('common.searchShops')"
+      :clear-label="t('common.clear')"
+    />
 
     <!-- Location is asked for here, on a tap — never on load. -->
     <div v-if="locationSupported" class="mt-5 text-[13px] leading-5">
@@ -316,7 +312,7 @@ async function addShop() {
       <button
         v-if="!adding"
         type="button"
-        class="text-[13px] leading-5 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/80"
+        class="inline-flex items-center rounded-full border border-ink/[0.12] px-4 py-2 text-[13px] leading-5 text-ink/70 transition-[color,border-color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:border-accent/60 hover-fine:hover:text-accent"
         @click="startAdd()"
       >
         {{ t('board.addShop') }}

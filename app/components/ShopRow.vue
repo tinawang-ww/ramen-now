@@ -196,10 +196,11 @@ function onInput(event: Event) {
 
         <div class="mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <!-- For people who aren't there: ask someone who is. -->
+          <!-- -my/py trade no visual change for a finger-sized hit area. -->
           <button
             type="button"
             :disabled="requested"
-            class="text-[12px] leading-4 text-ink/35 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:text-ink/25 hover-fine:hover:text-ink/70 hover-fine:disabled:hover:text-ink/25"
+            class="-my-1.5 py-1.5 text-[12px] leading-4 text-ink/35 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:text-ink/25 hover-fine:hover:text-ink/70 hover-fine:disabled:hover:text-ink/25"
             @click="emit('request')"
           >
             {{ requested ? t('shopRow.alreadyRequested') : t('shopRow.requestReport') }}
@@ -208,7 +209,7 @@ function onInput(event: Event) {
           <!-- The board answers "how long now"; the write-ups answer "is it worth it". -->
           <NuxtLink
             :to="{ path: '/feed', query: { shop: shop.name } }"
-            class="text-[12px] leading-4 text-ink/35 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-accent"
+            class="-my-1.5 py-1.5 text-[12px] leading-4 text-ink/35 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-accent"
           >
             {{ t('shopRow.readReviews') }}
           </NuxtLink>
@@ -216,7 +217,7 @@ function onInput(event: Event) {
           <!-- Every share is a personal invite — this is how the board grows. -->
           <button
             type="button"
-            class="text-[12px] leading-4 text-ink/35 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-accent"
+            class="-my-1.5 py-1.5 text-[12px] leading-4 text-ink/35 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-accent"
             @click="emit('share')"
           >
             {{ t('shopRow.share') }}

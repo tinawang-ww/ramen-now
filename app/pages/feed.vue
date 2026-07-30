@@ -115,31 +115,19 @@ async function submit(payload: {
       </p>
     </header>
 
-    <div class="mt-8 flex items-center gap-3 border-b border-ink/[0.07] pb-1.5">
-      <input
-        v-model="query"
-        type="search"
-        enterkeyhint="search"
-        :placeholder="t('common.searchShops')"
-        :aria-label="t('common.searchShops')"
-        class="min-w-0 flex-1 bg-transparent text-[15px] leading-6 text-ink/90 outline-none placeholder:text-ink/25 [&::-webkit-search-cancel-button]:hidden"
-      >
-      <button
-        v-if="searching"
-        type="button"
-        class="shrink-0 text-[12px] leading-5 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
-        @click="query = ''"
-      >
-        {{ t('common.clear') }}
-      </button>
-    </div>
+    <SearchField
+      v-model="query"
+      class="mt-8"
+      :placeholder="t('common.searchShops')"
+      :clear-label="t('common.clear')"
+    />
 
     <!-- Signed out you can still read everything; only writing needs an account. -->
     <div class="mt-8">
       <NuxtLink
         v-if="!loggedIn"
         to="/login"
-        class="text-[13px] leading-5 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/80"
+        class="inline-flex items-center rounded-full border border-ink/[0.12] px-4 py-2 text-[13px] leading-5 text-ink/70 transition-[color,border-color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:border-accent/60 hover-fine:hover:text-accent"
       >
         {{ t('feed.signInToWrite') }}
       </NuxtLink>
@@ -147,7 +135,7 @@ async function submit(payload: {
       <button
         v-else-if="!writing"
         type="button"
-        class="text-[13px] leading-5 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/80"
+        class="inline-flex items-center rounded-full border border-ink/[0.12] px-4 py-2 text-[13px] leading-5 text-ink/70 transition-[color,border-color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:border-accent/60 hover-fine:hover:text-accent"
         @click="writing = true"
       >
         {{ t('feed.write') }}

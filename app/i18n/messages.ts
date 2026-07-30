@@ -7,6 +7,7 @@
  * falling back at runtime.
  */
 const zh = {
+  'nav.brand': '拉麵Now',
   'nav.board': '看板',
   'nav.feed': '食記',
   'nav.signIn': '登入',
@@ -22,6 +23,7 @@ const zh = {
   'board.seoDescription': '大家一起回報拉麵店現在的排隊狀況，出門前先看一眼。',
   'board.title': '現在排幾人',
   'board.tagline': '路過的人回報，出門前先看一眼。',
+  'board.stats': '{shops} 家店，{fresh} 家有現在的狀況',
   'board.locating': '定位中…',
   'board.findNearby': '⌖ 找我附近的',
   'board.sortedByDistance': '由近到遠排序',
@@ -144,6 +146,7 @@ const zh = {
 } as const
 
 const en = {
+  'nav.brand': 'Ramen Now',
   'nav.board': 'Board',
   'nav.feed': 'Reviews',
   'nav.signIn': 'Sign in',
@@ -159,6 +162,7 @@ const en = {
   'board.seoDescription': 'Everyone reports how long the line is at ramen shops right now — check before you head out.',
   'board.title': 'How long is the line',
   'board.tagline': 'Passers-by report the line, so you can check before heading out.',
+  'board.stats': '{shops} shops · {fresh} with a live count',
   'board.locating': 'Locating…',
   'board.findNearby': '⌖ Find shops near me',
   'board.sortedByDistance': 'Sorted nearest first',
