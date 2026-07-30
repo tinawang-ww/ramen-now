@@ -55,5 +55,5 @@ export default defineCachedEventHandler(async (event): Promise<ShopSummary[]> =>
 }, {
   maxAge: 60, // Cache for 60 seconds since we have a dedicated polling endpoint now
   swr: true,
-  name: 'shops-list-all'
+  name: 'shops-list-all',
 })

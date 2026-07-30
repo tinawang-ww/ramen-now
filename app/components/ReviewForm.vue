@@ -22,7 +22,6 @@ const price = ref<number | undefined>()
 const queue = ref('')
 const body = ref('')
 
-
 const ready = computed(() =>
   shop.value !== undefined
   && ramen.value.trim().length > 0

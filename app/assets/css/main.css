@@ -62,6 +62,21 @@ body {
   color: var(--color-ink);
 }
 
+/*
+ * Keyboard focus gets the accent it deserves; pointer focus stays quiet.
+ * Text fields opt out — their caret and border change already say "focused".
+ */
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
 /* Keep opacity fades (they aid comprehension), drop the movement. */
 @media (prefers-reduced-motion: reduce) {
 

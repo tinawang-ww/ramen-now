@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { loggedIn, user } = useUserSession()
+const { loggedIn } = useUserSession()
 const { t, toggleLocale } = useLocale()
 </script>
 
