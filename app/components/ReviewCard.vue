@@ -27,6 +27,15 @@ const meta = computed(() => `${props.review.author} · ${formatAgo(props.review.
       <span class="tabular-nums">${{ review.price }}</span>
     </p>
 
+    <!-- The photo leads: it's what makes anyone want the bowl. -->
+    <img
+      v-if="review.photoUrl"
+      :src="review.photoUrl"
+      :alt="review.ramen"
+      loading="lazy"
+      class="mt-3 max-h-80 w-full rounded-xl object-cover"
+    >
+
     <!-- Newlines are content in a write-up, so they survive to the page. -->
     <p class="mt-3 whitespace-pre-line text-[14px] leading-6 text-ink/70">
       {{ review.body }}

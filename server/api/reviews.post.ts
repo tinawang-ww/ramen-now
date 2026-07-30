@@ -13,6 +13,7 @@ export default defineEventHandler(async (event): Promise<ReviewSummary> => {
     price?: unknown
     queue?: unknown
     body?: unknown
+    photoUrl?: unknown
   }>(event)
 
   const shopId = typeof body?.shopId === 'number' ? body.shopId : Number.NaN
@@ -46,6 +47,12 @@ export default defineEventHandler(async (event): Promise<ReviewSummary> => {
     throw createError({ statusCode: 400, statusMessage: `心得請填 1–${MAX_BODY} 個字` })
   }
 
+  // Only a URL this server issued survives; anything else quietly becomes "no
+  // photo" — the field is optional, not an error surface.
+  const photoUrl = typeof body?.photoUrl === 'string' && PHOTO_URL_PATTERN.test(body.photoUrl)
+    ? body.photoUrl
+    : null
+
   const db = useDb(event)
 
   const shop = await db
@@ -60,7 +67,7 @@ export default defineEventHandler(async (event): Promise<ReviewSummary> => {
 
   const review = await db
     .insert(schema.reviews)
-    .values({ shopId, userId: user.id, ramen, price, queue, body: text })
+    .values({ shopId, userId: user.id, ramen, price, queue, body: text, photoUrl })
     .returning({ id: schema.reviews.id, createdAt: schema.reviews.createdAt })
     .get()
 
@@ -73,7 +80,7 @@ export default defineEventHandler(async (event): Promise<ReviewSummary> => {
     price,
     queue,
     body: text,
-    photoUrl: null,
+    photoUrl,
     author: user.label,
     createdAt: (review?.createdAt ?? new Date()).getTime(),
   }

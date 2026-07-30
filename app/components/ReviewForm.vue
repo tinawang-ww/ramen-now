@@ -5,7 +5,7 @@ import { MAX_BODY, MAX_PRICE, MAX_QUEUE, MAX_RAMEN } from '~~/shared/review'
 defineProps<{ submitting: boolean }>()
 
 const emit = defineEmits<{
-  submit: [payload: { shopId: number, ramen: string, price: number, queue: string, body: string }]
+  submit: [payload: { shopId: number, ramen: string, price: number, queue: string, body: string, photoUrl: string | null }]
   cancel: []
 }>()
 
@@ -30,6 +30,65 @@ const ready = computed(() =>
   && body.value.trim().length > 0,
 )
 
+// The photo goes up as soon as it's picked, so posting stays instant — by the
+// time the write-up is typed, the upload has long finished.
+const photoUrl = ref<string | null>(null)
+const photoPreview = ref<string | null>(null)
+const uploadingPhoto = ref(false)
+const photoError = ref('')
+
+function dropPreview() {
+  if (photoPreview.value)
+    URL.revokeObjectURL(photoPreview.value)
+  photoPreview.value = null
+}
+
+function removePhoto() {
+  dropPreview()
+  photoUrl.value = null
+  photoError.value = ''
+}
+
+onScopeDispose(dropPreview)
+
+async function onPhotoPick(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  // Re-picking the same file later must still fire change.
+  input.value = ''
+
+  if (!file || uploadingPhoto.value)
+    return
+
+  photoError.value = ''
+  uploadingPhoto.value = true
+
+  try {
+    const blob = await compressPhoto(file)
+
+    if (!isUploadablePhoto(blob)) {
+      photoError.value = t('reviewForm.photoTooLarge')
+      return
+    }
+
+    const result = await $fetch<{ url: string }>('/api/photos', {
+      method: 'POST',
+      body: blob,
+      headers: { 'content-type': blob.type },
+    })
+
+    dropPreview()
+    photoUrl.value = result.url
+    photoPreview.value = URL.createObjectURL(blob)
+  }
+  catch {
+    photoError.value = t('reviewForm.photoFailed')
+  }
+  finally {
+    uploadingPhoto.value = false
+  }
+}
+
 function submit() {
   if (!ready.value || shop.value === undefined || price.value === undefined)
     return
@@ -40,6 +99,7 @@ function submit() {
     price: price.value,
     queue: queue.value.trim(),
     body: body.value.trim(),
+    photoUrl: photoUrl.value,
   })
 }
 
@@ -138,6 +198,43 @@ const BODY_FIELD = {
         :placeholder="t('reviewForm.bodyPlaceholder')"
         :ui="BODY_FIELD"
       />
+    </UFormField>
+
+    <UFormField :label="t('reviewForm.photoLabel')" :ui="FIELD_LABEL">
+      <div v-if="photoPreview" class="flex items-end gap-3">
+        <img
+          :src="photoPreview"
+          alt=""
+          class="h-24 w-24 rounded-xl object-cover"
+        >
+        <button
+          type="button"
+          class="text-[12px] leading-4 text-ink/30 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-ink/60"
+          @click="removePhoto()"
+        >
+          {{ t('reviewForm.removePhoto') }}
+        </button>
+      </div>
+
+      <!-- A label, not a button: the sr-only input keeps the native picker. -->
+      <label
+        v-else
+        class="inline-block cursor-pointer text-[13px] leading-5 text-ink/50 transition-[color,opacity] duration-150"
+        :class="uploadingPhoto ? 'opacity-40' : 'hover-fine:hover:text-ink/90'"
+      >
+        {{ uploadingPhoto ? t('reviewForm.photoUploading') : t('reviewForm.addPhoto') }}
+        <input
+          type="file"
+          accept="image/*"
+          class="sr-only"
+          :disabled="uploadingPhoto"
+          @change="onPhotoPick"
+        >
+      </label>
+
+      <p v-if="photoError" class="mt-1 text-[11px] leading-4 text-accent/90">
+        {{ photoError }}
+      </p>
     </UFormField>
 
     <div class="flex items-center gap-4">

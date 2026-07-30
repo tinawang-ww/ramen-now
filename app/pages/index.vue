@@ -122,6 +122,11 @@ const searching = computed(() => query.value.trim().length > 0)
 const pendingCount = computed(() =>
   shops.value.filter(shop => isRequestPending(shop.requestedAt, shop.reportedAt, nowMs.value)).length)
 
+/** How alive the board is right now — worth saying out loud at the top. */
+const freshCount = computed(() =>
+  shops.value.filter(shop =>
+    shop.reportedAt !== null && nowMs.value - shop.reportedAt < FRESH_WINDOW_MS).length)
+
 /** The bottom line does quadruple duty: feedback, location trouble, open asks, hint. */
 const statusLine = computed(() => {
   // Most specific first: a message about what the user just did outranks
@@ -303,6 +308,9 @@ async function request(shop: ShopSummary) {
       </h1>
       <p class="mt-1.5 text-[13px] leading-5 text-ink/35">
         {{ t('board.tagline') }}
+      </p>
+      <p v-if="shops.length" class="mt-3 text-[12px] leading-4 tabular-nums text-mist">
+        {{ t('board.stats', { shops: shops.length, fresh: freshCount }) }}
       </p>
     </header>
 
