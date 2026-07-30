@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 引入共用的型別定義，這裡引入拉麵店的摘要資料型別
-import type { ShopSummary } from '~~/shared/types'
+import type { QueueHour, ShopSummary } from '~~/shared/types'
 // 引入計算距離格式化的共用函式
 import { formatDistance } from '~~/shared/geo'
 // 引入與排隊狀態相關的常數與判斷函式
@@ -29,6 +29,8 @@ const emit = defineEmits<{
   report: [people: number]
   // 發出請求更新排隊人數的事件
   request: []
+  // 分享這家店的即時排隊狀況（index.vue 已經在監聽這個事件）
+  share: []
   // 發出元件進入或離開可視範圍的事件
   visible: [shopId: number, isVisible: boolean]
 }>()
@@ -89,12 +91,32 @@ const draft = ref<number | undefined>(0)
 /** The best news on the board — worth its own chip, not a number you must parse. */
 const noLine = computed(() => fresh.value && props.shop.people === 0)
 
+// 這家店「平常什麼時候人多」的時段統計。
+// 只在第一次打開 Modal 時抓一次：五十列就是五十個沒人看的圖表請求。
+const hours = ref<QueueHour[]>([])
+let hoursRequested = false
+
+async function loadHours() {
+  if (hoursRequested)
+    return
+
+  hoursRequested = true
+  try {
+    hours.value = (await $fetch(`/api/shops/${props.shop.id}/hours`)).hours
+  }
+  catch {
+    // 沒有圖表也沒關係，Modal 其他功能照常。
+  }
+}
+
 // 監聽 Modal 的開關狀態
 // 當 Modal 被打開時，決定人數選擇器的初始值：
 // 如果當前的回報資料還是「新鮮」的，就帶入資料庫目前的人數，否則歸零重新計算。
 watch(() => props.open, (open) => {
-  if (open)
+  if (open) {
     draft.value = fresh.value ? (props.shop.people ?? 0) : 0
+    loadHours()
+  }
 })
 
 /**
@@ -105,9 +127,12 @@ watch(() => props.open, (open) => {
 const count = computed(() => draft.value ?? 0)
 
 const reportButtonStyle = computed(() => {
-  if (count.value <= 5) return 'bg-mist text-ink/90'
-  if (count.value <= 10) return 'bg-matcha text-ink/90'
-  if (count.value <= 20) return 'bg-marigold text-ink/90'
+  if (count.value <= 5)
+    return 'bg-mist text-ink/90'
+  if (count.value <= 10)
+    return 'bg-matcha text-ink/90'
+  if (count.value <= 20)
+    return 'bg-marigold text-ink/90'
   return 'bg-accent text-white'
 })
 
@@ -123,29 +148,22 @@ const shownFresh = computed(() => props.open || fresh.value)
 const canReport = computed(() => props.distance !== null && props.distance !== undefined && props.distance <= 0.5)
 
 const reportButtonLabel = computed(() => {
-  if (props.distance === null || props.distance === undefined) return t('shopRow.locationRequired')
-  if (props.distance > 0.5) return t('shopRow.tooFar')
+  if (props.distance === null || props.distance === undefined)
+    return t('shopRow.locationRequired')
+  if (props.distance > 0.5)
+    return t('shopRow.tooFar')
   return t('shopRow.report')
 })
 
 /** 定義 Modal 中增減排隊人數按鈕的共用 CSS 樣式字串 */
 const STEP_BUTTON = 'size-9 rounded-full border border-ink/[0.09] text-[15px] leading-none text-ink/70 transition-[transform,border-color,opacity] duration-150 ease-out-strong active:scale-[0.94] disabled:opacity-25 hover-fine:hover:border-ink/25'
 
-const shopImageSrc = computed(() => {
-  const stamps = [
-    '/stamps/ramen2.webp',
-    '/stamps/ramen3.webp',
-    '/stamps/ramen4.webp',
-    '/stamps/ramen5.webp',
-    '/stamps/stamp1.webp',
-    '/stamps/stamp2.webp',
-    '/stamps/stamp3.webp',
-  ]
-  return stamps[props.shop.id % stamps.length]
-})
+// 圖片來源統一由 utils/stamps.ts 決定，讓看板、Modal 與 /me 的蓋章簿長得一致
+const shopImageSrc = computed(() => shopStampSrc(props.shop.id))
 
 const thumbnailSrc = computed(() => {
-  if (requested.value) return '/stamps/empty_bowl.webp'
+  if (requested.value)
+    return '/stamps/empty_bowl.webp'
   return shopImageSrc.value
 })
 
@@ -166,17 +184,17 @@ watch(isVisible, (visible) => {
       <!-- 點擊時觸發 'request' 事件發送請求。大於90分鐘無回報會變為灰階。 -->
       <div class="relative shrink-0 flex items-center justify-center">
         <!-- 水波紋效果 (只有在 request 狀態下顯示) -->
-        <div v-if="requested" class="absolute inset-0 rounded-full animate-ping [animation-duration:4s]" :class="isRecent ? 'bg-mist/50' : 'bg-accent/50'"></div>
-        <div v-if="requested" class="absolute -inset-1.5 rounded-full animate-pulse" :class="isRecent ? 'bg-mist/20' : 'bg-accent/20'"></div>
+        <div v-if="requested" class="absolute inset-0 rounded-full animate-ping [animation-duration:4s]" :class="isRecent ? 'bg-mist/50' : 'bg-accent/50'" />
+        <div v-if="requested" class="absolute -inset-1.5 rounded-full animate-pulse" :class="isRecent ? 'bg-mist/20' : 'bg-accent/20'" />
 
         <button
           type="button"
           class="relative z-10 flex size-14 items-center justify-center rounded-full overflow-hidden transition-[transform,filter,opacity] duration-150 ease-out-strong active:scale-[0.97] focus:outline-none hover-fine:hover:opacity-85"
           :class="!fresh && !requested ? 'grayscale opacity-75' : ''"
-          @click.stop="requested ? emit('toggle') : emit('request')"
           :aria-label="requested ? t('shopRow.alreadyRequested') : t('shopRow.requestReport')"
+          @click.stop="requested ? emit('toggle') : emit('request')"
         >
-          <img :src="thumbnailSrc" class="w-full h-full object-cover" alt="" />
+          <img :src="thumbnailSrc" class="w-full h-full object-cover" alt="">
         </button>
       </div>
 
@@ -223,8 +241,13 @@ watch(isVisible, (visible) => {
             <button type="button" class="absolute right-0 top-0 text-ink/40 transition-colors hover:text-ink/70" @click="emit('toggle')">
               <UIcon name="material-symbols:close" class="size-6" />
             </button>
-            <h3 class="text-[22px] leading-7 text-ink/90 break-words text-center px-8 font-shop">{{ shop.name }}</h3>
-            <img :src="shopImageSrc" class="size-20 rounded-full object-cover mt-4 shadow-sm" alt="" />
+            <h3 class="text-[22px] leading-7 text-ink/90 break-words text-center px-8 font-shop">
+              {{ shop.name }}
+            </h3>
+            <img :src="shopImageSrc" class="size-20 rounded-full object-cover mt-4 shadow-sm" alt="">
+
+            <!-- 這家店自己的回報史，摺成「什麼時候去比較不用排」 -->
+            <QueueHours v-if="hours.length" class="mt-5" :hours="hours" :now="now" />
           </div>
 
           <!-- 內容區塊：包含人數選擇器與送出按鈕 -->
@@ -258,7 +281,7 @@ watch(isVisible, (visible) => {
                   </button>
                 </template>
               </UInputNumber>
-              
+
               <!-- 顯示 "人排隊中" 之類的提示文字 -->
               <span class="text-[14px] text-ink/50">{{ t('shopRow.inLine') }}</span>
             </div>
@@ -287,9 +310,25 @@ watch(isVisible, (visible) => {
                 {{ requested ? t('shopRow.alreadyRequested') : t('shopRow.requestReport') }}
               </button>
             </div>
+
+            <!-- 看板說現在，食記說值不值得；分享則是看板成長的方式。 -->
+            <div class="flex items-center justify-center gap-6">
+              <NuxtLink
+                :to="{ path: '/feed', query: { shop: shop.name } }"
+                class="-my-1.5 py-1.5 text-[12px] leading-4 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-accent"
+              >
+                {{ t('shopRow.readReviews') }}
+              </NuxtLink>
+
+              <button
+                type="button"
+                class="-my-1.5 py-1.5 text-[12px] leading-4 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-accent"
+                @click="emit('share')"
+              >
+                {{ t('shopRow.share') }}
+              </button>
+            </div>
           </div>
-
-
         </div>
       </template>
     </UModal>

@@ -3,10 +3,12 @@ import { sql } from 'drizzle-orm'
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const idsStr = query.ids as string
-  if (!idsStr) return []
+  if (!idsStr)
+    return []
 
-  const ids = idsStr.split(',').map(Number).filter(id => !isNaN(id))
-  if (ids.length === 0) return []
+  const ids = idsStr.split(',').map(Number).filter(id => !Number.isNaN(id))
+  if (ids.length === 0)
+    return []
 
   // Ensure we don't accidentally query too many if something goes wrong on the client
   if (ids.length > 50) {

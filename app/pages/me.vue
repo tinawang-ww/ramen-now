@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { StampSummary } from '~~/shared/types'
 import type { MessageKey } from '~/i18n/messages'
 import { browserSupportsWebAuthn } from '@simplewebauthn/browser'
 
@@ -15,6 +16,9 @@ useSeoMeta({
 const { user, clear, fetch: fetchSession } = useUserSession()
 const { register } = useWebAuthn({ registerEndpoint: '/api/webauthn/register' })
 const { data } = await useFetch('/api/me/reports')
+const { data: stamps } = await useFetch('/api/me/stamps', {
+  default: (): StampSummary[] => [],
+})
 
 const count = computed(() => data.value?.count ?? 0)
 
@@ -37,6 +41,67 @@ const statusLine = computed(() => {
 
   return t('me.anonNote')
 })
+
+/**
+ * Stamp inks. Which shop gets which ink is arbitrary but stable — keyed on the
+ * id, so a stamp never changes color between visits. Gold overrides at ×10.
+ */
+const STAMP_TONES = [
+  'border-accent/70 text-accent',
+  'border-mist text-mist',
+  'border-matcha text-matcha',
+  'border-ink/40 text-ink/55',
+]
+
+const sharingStamps = ref(false)
+
+/**
+ * The stamp book as a PNG — native share sheet where files can be shared,
+ * a plain download everywhere else. Either way it leaves as an image, which
+ * is the format feeds and chats actually pass around.
+ */
+async function shareStamps() {
+  if (sharingStamps.value || !stamps.value.length)
+    return
+
+  sharingStamps.value = true
+  noticeKey.value = null
+
+  try {
+    const blob = await renderStampBook(stamps.value, {
+      title: t('me.stamps'),
+      subtitle: `${user.value?.label ?? ''} · ${t('me.shareCardShops', { count: stamps.value.length })}`,
+      more: stamps.value.length > 12
+        ? t('me.shareCardMore', { count: stamps.value.length - 12 })
+        : '',
+      tagline: t('board.tagline'),
+      origin: location.host,
+      regularLabel: t('me.regular'),
+    })
+    const file = new File([blob], 'ramen-now-stamps.png', { type: 'image/png' })
+
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file] })
+    }
+    else {
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = file.name
+      link.click()
+      URL.revokeObjectURL(url)
+      noticeKey.value = 'me.stampsDownloaded'
+    }
+  }
+  catch (error) {
+    // Closing the share sheet isn't a failure, so it doesn't read as one.
+    if ((error as Error)?.name !== 'AbortError')
+      noticeKey.value = 'me.shareStampsFailed'
+  }
+  finally {
+    sharingStamps.value = false
+  }
+}
 
 async function signOut() {
   if (working.value)
@@ -107,6 +172,62 @@ async function addPasskey() {
       <span class="mx-1.5 text-[40px] leading-none tracking-tight text-ink/90 tabular-nums">{{ count }}</span>
       {{ count === 1 ? t('me.countSuffixOne') : t('me.countSuffixMany') }}
     </p>
+
+    <!-- The stamp book: one page-worth of inked bowls, oldest first. -->
+    <section v-if="stamps.length" class="mt-12">
+      <h2 class="text-[13px] leading-5 text-ink/70">
+        {{ t('me.stamps') }}
+      </h2>
+      <p class="mt-0.5 text-[11px] leading-4 text-ink/35">
+        {{ t('me.stampsHint') }}
+      </p>
+
+      <ul class="mt-5 flex flex-wrap gap-x-5 gap-y-6">
+        <li v-for="stamp in stamps" :key="stamp.shopId" class="w-[4.5rem]">
+          <!--
+            The same bowl art the board wears, rotated by the id so it reads
+            hand-stamped but never re-inks. The chop earns its look: a dashed
+            second ring at ×3 (outline inherits the tone via currentColor),
+            marigold gold at ×10.
+          -->
+          <span
+            class="relative mx-auto block size-[4.5rem] rounded-full border-2"
+            :class="[
+              stamp.reports >= 10 ? 'border-marigold text-marigold border-[3px]' : STAMP_TONES[stamp.shopId % STAMP_TONES.length],
+              stamp.reports >= 3 ? 'outline outline-1 outline-offset-2 outline-dashed' : '',
+            ]"
+            :style="{ transform: `rotate(${(stamp.shopId % 7) - 3}deg)` }"
+            aria-hidden="true"
+          >
+            <img :src="shopStampSrc(stamp.shopId)" class="size-full rounded-full object-cover" alt="">
+            <span class="absolute -bottom-1 -right-1 rounded-full bg-paper px-1.5 text-[10px] leading-4 tabular-nums text-ink/70 ring-1 ring-ink/10">×{{ stamp.reports }}</span>
+          </span>
+          <span class="mt-1.5 block truncate text-center text-[10px] leading-4 text-ink/45">
+            {{ stamp.name }}
+          </span>
+          <span class="block text-center text-[9px] leading-3 tabular-nums text-mist">
+            {{ stampDate(stamp.firstAt) }}
+          </span>
+          <!-- Nobody has reported here more than they have. -->
+          <span
+            v-if="stamp.regular"
+            class="mx-auto mt-1 block w-fit rounded-full bg-marigold/40 px-1.5 text-[9px] leading-[14px] text-ink/70"
+          >
+            {{ t('me.regular') }}
+          </span>
+        </li>
+      </ul>
+
+      <!-- The book leaves as an image — feeds and chats don't pass around links to /me. -->
+      <button
+        type="button"
+        :disabled="sharingStamps"
+        class="mt-5 text-[12px] leading-4 text-ink/35 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-accent"
+        @click="shareStamps()"
+      >
+        {{ sharingStamps ? t('me.sharingStamps') : t('me.shareStamps') }}
+      </button>
+    </section>
 
     <p
       class="mt-8 text-[11px] leading-4 transition-colors duration-200"

@@ -37,10 +37,10 @@ const {
 // shallow default would keep the list rendering the pre-tap values.
 // default: [] so `shops.value` is an array even before the request resolves —
 // every reader below can skip a null check.
-const { data: shops, refresh } = await useFetch('/api/shops', {
+const { data: shops } = await useFetch('/api/shops', {
   deep: true,
   default: (): ShopSummary[] => [],
-  query: computed(() => (here.value ? { lat: here.value.lat, lng: here.value.lng } : {}))
+  query: computed(() => (here.value ? { lat: here.value.lat, lng: here.value.lng } : {})),
 })
 
 // A clock that ticks every 30s. Rows render "5 min ago" and decide whether a
@@ -55,7 +55,6 @@ const nowMs = computed(() => now.value.getTime())
 const openId = ref<number | null>(null)
 // Transient message shown on the bottom status line, set by `flash()`.
 const notice = ref('')
-
 
 // Seeded from the URL like the feed, so a shared /?shop=麵屋 一心 link opens
 // the board already filtered to that shop.
@@ -93,7 +92,8 @@ const rows = computed(() => {
     // 搜尋欄為空時：如果有位置，只顯示 500m 內的；如果沒有位置，就不顯示
     if (from === null) {
       filteredList = []
-    } else {
+    }
+    else {
       filteredList = list.filter(row => row.distance !== null && row.distance <= 0.5)
     }
   }
@@ -168,7 +168,7 @@ useIntervalFn(async () => {
     try {
       const ids = Array.from(visibleShopIds).join(',')
       const reports = await $fetch<any[]>(`/api/shops/reports?ids=${ids}`)
-      
+
       for (const report of reports) {
         const shop = shops.value.find(s => s.id === report.id)
         if (shop) {
@@ -177,7 +177,8 @@ useIntervalFn(async () => {
           shop.requestedAt = report.requestedAt
         }
       }
-    } catch (e) {
+    }
+    catch {
       // Polling failure is silent. It'll try again in a minute.
     }
   }
@@ -281,8 +282,6 @@ async function request(shop: ShopSummary) {
     flash(t('board.requestFailed'))
   }
 }
-
-
 </script>
 
 <template>
@@ -298,7 +297,7 @@ async function request(shop: ShopSummary) {
 
     <!-- Title and one-line description of what the board is. -->
     <header class="mt-6 flex flex-col items-center text-center">
-      <img :src="'/stamps/default.png'" alt="Queue icon" class="mb-3 size-12" />
+      <img src="/stamps/default.png" alt="Queue icon" class="mb-3 size-12">
       <h1 class="text-[22px] leading-7 tracking-tight text-ink/90">
         {{ t('board.title') }}
       </h1>
@@ -418,7 +417,6 @@ async function request(shop: ShopSummary) {
       without moving focus, which is how a failed report gets reported at all.
       It darkens when it has something to say and fades back for the resting hint.
     -->
-
 
     <p
       class="mt-6 text-[11px] leading-4 transition-colors duration-200"

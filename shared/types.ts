@@ -16,6 +16,25 @@ export interface ShopSummary {
   requestedAt: number | null
 }
 
+export interface QueueHour {
+  /** Hour of day in Taipei time, 0–23. */
+  hour: number
+  /** Mean reported head count for that hour, one decimal. */
+  avg: number
+  samples: number
+}
+
+export interface StampSummary {
+  shopId: number
+  name: string
+  /** Reports this user has filed for the shop — the ×N inked on the stamp. */
+  reports: number
+  /** First report's timestamp in ms — the date on the stamp. */
+  firstAt: number
+  /** Nobody has reported here more than this user (and they've done it ≥3 times). */
+  regular: boolean
+}
+
 export interface ReviewSummary {
   id: number
   shopId: number
