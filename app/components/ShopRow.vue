@@ -172,6 +172,10 @@ const isVisible = useElementVisibility(rowRef)
 
 watch(isVisible, (visible) => {
   emit('visible', props.shop.id, visible)
+  // The hourly chart sits right on the row now, so it loads when the row
+  // scrolls into view — once, ever, per shop.
+  if (visible)
+    loadHours()
 }, { immediate: true })
 </script>
 
@@ -179,7 +183,7 @@ watch(isVisible, (visible) => {
   <!-- 每間店的列容器，底部加上邊界分隔線 -->
   <li ref="rowRef" class="border-b border-ink/[0.07]">
     <!-- 一般檢視區塊 (這部分總是會顯示在畫面上) -->
-    <div class="flex w-full items-center gap-4 py-8">
+    <div class="flex w-full items-center gap-4 pt-8 pb-4">
       <!-- 請求回報按鈕 / 狀態圖示 -->
       <!-- 點擊時觸發 'request' 事件發送請求。大於90分鐘無回報會變為灰階。 -->
       <div class="relative shrink-0 flex items-center justify-center">
@@ -228,6 +232,32 @@ watch(isVisible, (visible) => {
         <!-- 動態傳入要顯示的人數 (shownPeople) 以及是否為新鮮狀態 (shownFresh) -->
         <QueueFigures class="shrink-0" :people="shownPeople" :fresh="shownFresh" />
       </button>
+    </div>
+
+    <!--
+      不用點進 Modal 就能看到、做到的事：這家平常什麼時候人多（有資料才畫），
+      看食記，還有分享——分享是看板成長的方式，不該藏在兩層點擊後面。
+    -->
+    <div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 pb-6">
+      <QueueHours v-if="hours.length" compact :hours="hours" :now="now" />
+      <span v-else class="min-h-[1px]" aria-hidden="true" />
+
+      <span class="ml-auto flex items-center gap-4">
+        <NuxtLink
+          :to="{ path: '/feed', query: { shop: shop.name } }"
+          class="-my-1.5 py-1.5 text-[12px] leading-4 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-accent"
+        >
+          {{ t('shopRow.readReviews') }}
+        </NuxtLink>
+
+        <button
+          type="button"
+          class="-my-1.5 py-1.5 text-[12px] leading-4 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-accent"
+          @click="emit('share')"
+        >
+          {{ t('shopRow.share') }}
+        </button>
+      </span>
     </div>
 
     <!-- 排隊人數回報 Modal (彈出視窗) -->
@@ -308,24 +338,6 @@ watch(isVisible, (visible) => {
                 @click="emit('request')"
               >
                 {{ requested ? t('shopRow.alreadyRequested') : t('shopRow.requestReport') }}
-              </button>
-            </div>
-
-            <!-- 看板說現在，食記說值不值得；分享則是看板成長的方式。 -->
-            <div class="flex items-center justify-center gap-6">
-              <NuxtLink
-                :to="{ path: '/feed', query: { shop: shop.name } }"
-                class="-my-1.5 py-1.5 text-[12px] leading-4 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-accent"
-              >
-                {{ t('shopRow.readReviews') }}
-              </NuxtLink>
-
-              <button
-                type="button"
-                class="-my-1.5 py-1.5 text-[12px] leading-4 text-ink/40 transition-[color,transform] duration-150 ease-out-strong active:scale-[0.97] hover-fine:hover:text-accent"
-                @click="emit('share')"
-              >
-                {{ t('shopRow.share') }}
               </button>
             </div>
           </div>

@@ -5,6 +5,8 @@ const props = defineProps<{
   hours: QueueHour[]
   /** ms — the bar for the hour it is right now gets the accent ink. */
   now: number
+  /** Board rows are tight: clamp to ramen hours (11–20) instead of stretching. */
+  compact?: boolean
 }>()
 
 const { t } = useLocale()
@@ -12,12 +14,12 @@ const { t } = useLocale()
 /**
  * Ramen hours by default, stretched when the data says otherwise — a shop
  * with 22:00 reports gets its 22:00 bar, but a lunch-only shop isn't padded
- * out to midnight.
+ * out to midnight. In compact mode the window stays fixed instead.
  */
 const range = computed(() => {
   const reported = props.hours.map(bucket => bucket.hour)
-  const start = Math.min(11, ...reported)
-  const end = Math.max(20, ...reported)
+  const start = props.compact ? 11 : Math.min(11, ...reported)
+  const end = props.compact ? 20 : Math.max(20, ...reported)
 
   return Array.from({ length: end - start + 1 }, (_, index) => start + index)
 })
