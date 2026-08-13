@@ -16,7 +16,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const db = useDb(event)
-  const session = await getUserSession(event)
+  // Catch session error in case NUXT_SESSION_PASSWORD is not set on Cloudflare
+  const session = await getUserSession(event).catch(() => ({} as any))
 
   const shop = await db
     .select({ id: schema.shops.id })
@@ -30,14 +31,18 @@ export default defineEventHandler(async (event) => {
 
   const report = await db
     .insert(schema.reports)
-    // Signed out means a null author, not a rejected report: filing anonymously
-    // stays the one-tap path it has always been.
-    .values({ shopId, people, userId: session.user?.id ?? null })
+    // explicitly pass createdAt as new Date() so Drizzle stores 13-digit ms
+    .values({ shopId, people, userId: session.user?.id ?? null, createdAt: new Date() })
     .returning({ people: schema.reports.people, createdAt: schema.reports.createdAt })
     .get()
 
+  const createdAtVal = report?.createdAt
+  const reportedAt = createdAtVal
+    ? (createdAtVal instanceof Date ? createdAtVal.getTime() : Number(createdAtVal))
+    : Date.now()
+
   return {
     people: report?.people ?? people,
-    reportedAt: (report?.createdAt ?? new Date()).getTime(),
+    reportedAt,
   }
 })

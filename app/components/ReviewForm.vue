@@ -81,8 +81,12 @@ async function onPhotoPick(event: Event) {
     photoUrl.value = result.url
     photoPreview.value = URL.createObjectURL(blob)
   }
-  catch {
-    photoError.value = t('reviewForm.photoFailed')
+  catch (error) {
+    // 503 is the server saying there is no bucket to upload into — a standing
+    // state, not a hiccup, so it must not read as "try again".
+    photoError.value = (error as { statusCode?: number })?.statusCode === 503
+      ? t('reviewForm.photoDisabled')
+      : t('reviewForm.photoFailed')
   }
   finally {
     uploadingPhoto.value = false

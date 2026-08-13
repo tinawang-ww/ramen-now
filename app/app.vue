@@ -12,6 +12,7 @@ useHead({
 
 <template>
   <UApp>
+    <RamenBackground />
     <div ref="shell">
       <NuxtLayout>
         <NuxtPage />

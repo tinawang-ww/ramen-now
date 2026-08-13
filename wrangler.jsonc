@@ -15,10 +15,11 @@
       "migrations_dir": "server/database/migrations"
     }
   ],
-  "r2_buckets": [
-    {
-      "binding": "PHOTOS",
-      "bucket_name": "ramen-now-photos"
-    }
-  ]
+  // R2 is not enabled on this account, and `wrangler deploy` refuses to ship a
+  // Worker whose bucket it cannot look up — so the binding stays out and the
+  // photo routes answer 503 / 404 on their own (see server/utils/photos.ts).
+  // Once R2 is turned on in the dashboard, create the bucket and restore:
+  //
+  // "r2_buckets": [{ "binding": "PHOTOS", "bucket_name": "ramen-now-photos" }]
+  "r2_buckets": []
 }

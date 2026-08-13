@@ -6,6 +6,14 @@
 export default defineEventHandler(async (event) => {
   await requireUserSession(event, { message: '請先登入再上傳照片' })
 
+  const bucket = usePhotos(event)
+
+  // No bucket, no upload — said plainly and early, before a 5MB body gets read
+  // for nowhere to put it.
+  if (!bucket) {
+    throw createError({ statusCode: 503, statusMessage: '照片功能暫時停用' })
+  }
+
   const type = getHeader(event, 'content-type') ?? ''
   const ext = PHOTO_TYPES[type]
 
@@ -32,7 +40,7 @@ export default defineEventHandler(async (event) => {
 
   const key = `${crypto.randomUUID()}.${ext}`
 
-  await usePhotos(event).put(key, body, {
+  await bucket.put(key, body, {
     httpMetadata: { contentType: type },
   })
 

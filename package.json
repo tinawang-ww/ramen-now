@@ -27,6 +27,7 @@
     "drizzle-orm": "^0.45.2",
     "nuxt": "^4.5.1",
     "nuxt-auth-utils": "^0.5.29",
+    "three": "^0.185.1",
     "vue": "^3.5.40",
     "vue-router": "^5.2.0"
   },
@@ -35,6 +36,7 @@
     "@cloudflare/workers-types": "^5.20260727.1",
     "@iconify-json/material-symbols": "^1.2.87",
     "@nuxt/eslint": "^1.16.0",
+    "@types/three": "0.185.1",
     "drizzle-kit": "^0.31.10",
     "eslint": "^10.8.0",
     "nitro-cloudflare-dev": "^0.2.2",
