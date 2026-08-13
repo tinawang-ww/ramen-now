@@ -89,7 +89,7 @@ async function startPasskey(kind: 'signin' | 'create') {
 </script>
 
 <template>
-  <main class="mx-auto min-h-[100dvh] w-full max-w-[30rem] px-6 pb-24 pt-20">
+  <main class="mx-auto min-h-[100dvh] w-full max-w-[30rem] bg-paper/55 px-6 pb-24 pt-20 backdrop-blur-2xl backdrop-saturate-150">
     <header>
       <h1 class="text-[22px] leading-7 tracking-tight text-ink/90">
         {{ t('login.title') }}
