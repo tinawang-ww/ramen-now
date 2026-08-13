@@ -18,16 +18,18 @@ export const MAX_PHOTO_BYTES = 5 * 1024 * 1024
 export const PHOTO_URL_PATTERN
   = /^\/api\/photos\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:jpg|png|webp)$/
 
-export function usePhotos(event: H3Event) {
+/**
+ * The bucket, or null where there isn't one.
+ *
+ * Null is a real deployment state, not a misconfiguration: R2 isn't enabled on
+ * the account this app deploys to, so wrangler.jsonc carries no PHOTOS binding
+ * and every photo route has to answer for itself rather than throw a 500. The
+ * binding is the single source of truth — restore it in wrangler.jsonc and
+ * both routes come back to life without another switch to flip.
+ */
+export function usePhotos(event: H3Event): R2Bucket | null {
   // Same access pattern as useDb: the binding shape comes from wrangler.jsonc.
   const env = event.context.cloudflare?.env as { PHOTOS?: R2Bucket } | undefined
 
-  if (!env?.PHOTOS) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'R2 binding "PHOTOS" is missing. Run pnpm dev via nitro-cloudflare-dev or wrangler dev.',
-    })
-  }
-
-  return env.PHOTOS
+  return env?.PHOTOS ?? null
 }

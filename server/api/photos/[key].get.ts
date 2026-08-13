@@ -9,7 +9,9 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Not found' })
   }
 
-  const object = await usePhotos(event).get(key)
+  // With no bucket bound there is nothing here to find — same answer as a key
+  // that was never issued, rather than a 500 on an <img> the page already drew.
+  const object = await usePhotos(event)?.get(key)
 
   if (!object) {
     throw createError({ statusCode: 404, statusMessage: 'Not found' })
