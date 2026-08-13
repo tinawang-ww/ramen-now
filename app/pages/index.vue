@@ -290,7 +290,7 @@ async function request(shop: ShopSummary) {
 </script>
 
 <template>
-  <main class="mx-auto min-h-[100dvh] w-full max-w-[30rem] pb-24 pl-6 pr-8 pt-20 sm:pr-6">
+  <main class="mx-auto min-h-[100dvh] w-full max-w-[30rem] bg-paper/55 pb-24 pl-6 pr-8 pt-20 backdrop-blur-2xl backdrop-saturate-150 sm:pr-6">
     <!--
       The right edge is wider on phones, where the scroll indicator rides over it.
 
