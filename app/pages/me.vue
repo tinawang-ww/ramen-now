@@ -53,53 +53,97 @@ const STAMP_TONES = [
   'border-ink/40 text-ink/55',
 ]
 
-const sharingStamps = ref(false)
+const STAMP_FILENAME = 'ramen-now-stamps.png'
+
+const stampAction = ref<'share' | 'copy' | null>(null)
+
+/** The card itself. Both endings want the same PNG, so only the ending differs. */
+function drawStampBook() {
+  return renderStampBook(stamps.value, {
+    title: t('me.stamps'),
+    subtitle: `${user.value?.label ?? ''} · ${t('me.shareCardShops', { count: stamps.value.length })}`,
+    more: stamps.value.length > 12
+      ? t('me.shareCardMore', { count: stamps.value.length - 12 })
+      : '',
+    tagline: t('board.tagline'),
+    origin: location.host,
+    regularLabel: t('me.regular'),
+  })
+}
 
 /**
  * The stamp book as a PNG — native share sheet where files can be shared,
  * a plain download everywhere else. Either way it leaves as an image, which
  * is the format feeds and chats actually pass around.
+ *
+ * Drawing the card costs enough time that the tap's activation may be spent by
+ * the time the sheet is asked for, and Safari refuses it on those grounds. So a
+ * refused sheet is not the end: it falls through to the download, which needs
+ * no gesture. Only a backed-out sheet ends quietly, because that was a choice.
  */
 async function shareStamps() {
-  if (sharingStamps.value || !stamps.value.length)
+  if (stampAction.value || !stamps.value.length)
     return
 
-  sharingStamps.value = true
+  stampAction.value = 'share'
   noticeKey.value = null
 
   try {
-    const blob = await renderStampBook(stamps.value, {
-      title: t('me.stamps'),
-      subtitle: `${user.value?.label ?? ''} · ${t('me.shareCardShops', { count: stamps.value.length })}`,
-      more: stamps.value.length > 12
-        ? t('me.shareCardMore', { count: stamps.value.length - 12 })
-        : '',
-      tagline: t('board.tagline'),
-      origin: location.host,
-      regularLabel: t('me.regular'),
-    })
-    const file = new File([blob], 'ramen-now-stamps.png', { type: 'image/png' })
+    const blob = await drawStampBook()
+    const file = new File([blob], STAMP_FILENAME, { type: 'image/png' })
 
     if (navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ files: [file] })
+      try {
+        await navigator.share({ files: [file] })
+
+        return
+      }
+      catch (error) {
+        // Backing out of the sheet isn't a failure, so it doesn't read as one.
+        if ((error as Error)?.name === 'AbortError')
+          return
+      }
+    }
+
+    downloadBlob(blob, file.name)
+    noticeKey.value = 'me.stampsDownloaded'
+  }
+  catch {
+    noticeKey.value = 'me.shareStampsFailed'
+  }
+  finally {
+    stampAction.value = null
+  }
+}
+
+/**
+ * Straight onto the clipboard, for the chats and posts that take a paste but
+ * won't take a file. Where there's no image clipboard the file is the closest
+ * thing to a paste, so it downloads rather than dead-ending.
+ */
+async function copyStamps() {
+  if (stampAction.value || !stamps.value.length)
+    return
+
+  stampAction.value = 'copy'
+  noticeKey.value = null
+
+  try {
+    const blob = await drawStampBook()
+
+    if (await copyImage(blob)) {
+      noticeKey.value = 'me.stampsCopied'
     }
     else {
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = file.name
-      link.click()
-      URL.revokeObjectURL(url)
+      downloadBlob(blob, STAMP_FILENAME)
       noticeKey.value = 'me.stampsDownloaded'
     }
   }
-  catch (error) {
-    // Closing the share sheet isn't a failure, so it doesn't read as one.
-    if ((error as Error)?.name !== 'AbortError')
-      noticeKey.value = 'me.shareStampsFailed'
+  catch {
+    noticeKey.value = 'me.copyStampsFailed'
   }
   finally {
-    sharingStamps.value = false
+    stampAction.value = null
   }
 }
 
@@ -218,15 +262,29 @@ async function addPasskey() {
         </li>
       </ul>
 
-      <!-- The book leaves as an image — feeds and chats don't pass around links to /me. -->
-      <button
-        type="button"
-        :disabled="sharingStamps"
-        class="mt-5 text-[12px] leading-4 text-ink/35 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-accent"
-        @click="shareStamps()"
-      >
-        {{ sharingStamps ? t('me.sharingStamps') : t('me.shareStamps') }}
-      </button>
+      <!--
+        The book leaves as an image — feeds and chats don't pass around links to
+        /me. Two ways out, at the same weight: the share sheet for phones, the
+        clipboard for everywhere a paste is quicker than a file.
+      -->
+      <div class="mt-5 flex flex-wrap items-baseline gap-x-4 gap-y-2 text-[12px] leading-4">
+        <button
+          type="button"
+          :disabled="stampAction !== null"
+          class="text-ink/35 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-accent"
+          @click="shareStamps()"
+        >
+          {{ stampAction === 'share' ? t('me.sharingStamps') : t('me.shareStamps') }}
+        </button>
+        <button
+          type="button"
+          :disabled="stampAction !== null"
+          class="text-ink/35 transition-[color,opacity,transform] duration-150 ease-out-strong active:scale-[0.97] disabled:opacity-40 hover-fine:hover:text-accent"
+          @click="copyStamps()"
+        >
+          {{ stampAction === 'copy' ? t('me.copyingStamps') : t('me.copyStamps') }}
+        </button>
+      </div>
     </section>
 
     <p
